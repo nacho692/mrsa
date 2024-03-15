@@ -1,60 +1,64 @@
 from docplex.mp.model import Model
 
-def solve(graph):
+
+def solve(graph, s, demands):
     m = Model(name='Steiner Forest')
 
-    # edges is an n*n matrix with either the variable edge set or not 
-    edges = [[(False, 0) for _ in range(len(graph))] for _ in range(len(graph))]
-    for v, outgoing in enumerate(graph):
-        for u in outgoing:
-            edges[v][u] = (True, m.binary_var(name="edge:" + str(v) + "_" + str(u)))
+    # y_de variables
+    idx = []
+    for u, outgoing in enumerate(graph):
+        for v in outgoing:
+            for d in range(len(demands)):
+                idx.append((d, u, v))
+    y = m.binary_var_dict(keys=idx, name="y")
 
-    demands = [(0, set([2, 3]))]
+    # p_dd' variables
+    # p = m.binary_var_dict(keys=[(d, d2) for d2 in range(demands) for d in range(demands) if d != d2], name="p")
 
-    for d in demands:
-        s = d[0]
-        T = d[1]
+    # flow constraints
+    for d, _ in enumerate(demands):
+        s = demands[d][0]
+        T = demands[d][1]
 
-        # source has no input edges
-        inputs = []
-        for e in [row[s] for row in edges]:
-            if e[0]:
-                inputs.append(e[1])
-        
-        m.add_constraint(sum(inputs) == 0, ctname="source " + str(s) + " has no input edges")
+        for j, _ in enumerate(graph):
+            if j == s:
+                # source has no input edges
+                inputs = []
+                for d2, u, v in y:
+                    if d == d2 and v == j:
+                        inputs.append(y[d, u, v])
+                m.add_constraint(sum(inputs) == 0, ctname="source " + str(s) + " has no input edges")
 
-        outputs = []
-        for e in edges[s]:
-            if e[0]:
-                outputs.append(e[1])
-        m.add_constraint(sum(outputs) >= 1, ctname="source " + str(s) + " has at least one output edge")
+                # source has one output edge
+                outputs = []
+                for d2, u, v in y:
+                    # variable is source
+                    if d2 == d and u == j:
+                        outputs.append(y[d, u, v])
+                m.add_constraint(sum(outputs) >= 1, ctname="source " + str(s) + " has at least one output edge")
+            elif j in T:
+                inputs = []
+                for d2, u, v in y:
+                    if d2 == d and v == j:
+                        inputs.append(y[d, u, v])
+                m.add_constraint(sum(inputs) == 1, ctname="terminal " + str(j) + " has one input edge")
+            else:
+                inputs = []
+                outputs = []
+                for d2, u, v in y:
+                    if d2 != d:
+                        continue
+                    # incoming edge to j
+                    if v == j:
+                        inputs.append(y[d, u, v])
+                    # outgoing edge from j
+                    if u == j:
+                        outputs.append(y[d, u, v])
 
-        for t in T:
-            inputs = []
-            for e in [row[t] for row in edges]:
-                if e[0]:
-                    inputs.append(e[1])
-            m.add_constraint(sum(inputs) == 1, ctname="terminal " + str(t) + " has one input edge")
-        
-        for v in range(0, len(graph)):
-            if v == s or v in T:
-                continue
-            for u, e in enumerate(edges[v]):
-                if e[0] == False:
-                    continue
+                for e in outputs:
+                    m.add_constraint(e <= sum(inputs), ctname="intermediate_flow: " + e.name)
 
-                i = []
-                for e2 in [row[v] for row in edges]:
-                    if e2[0]:
-                        i.append(e2[1])
-                m.add_constraint(e[1] <= sum(i), ctname="if outgoing by " + str(v) + "_" + str(u) + " then it must have incoming")
-
-    to_min = []
-    for h in edges:
-        for e in h:
-            if e[0]:
-                to_min.append(e[1])
-    m.set_objective("min", sum(to_min))
+    m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
     m.print_information()
     m.export_as_lp("prob.lp")
     m.solve()

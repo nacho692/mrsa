@@ -1,4 +1,4 @@
-import r_sf
+import dr_bf_r
 
 # g1 is a DAG
 g1 = [
@@ -14,4 +14,4 @@ ds = [(0, {2}, 500), (0, {1}, 500)]
 s = 1000
 
 
-r_sf.solve(g1, s, ds)
+dr_bf_r.solve(g1, s, ds)

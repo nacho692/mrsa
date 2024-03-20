@@ -1,3 +1,4 @@
+from sample_problems.problems import problems
 import dr_bf_r
 
 """
@@ -56,20 +57,20 @@ def validate_solution(graph, S, demands, solution):
                     (l2, r2) = solution[d2][1]
                     if r1 > l2 and l1 < r2:
                         raise AssertionError(f'overlap in allocation: demand_1={d1}=({l1},{r1}), demand_2={d2}=({l2},{r2})')
-# g1 is a DAG
-g1 = [
-    # v0 
-    [1],
-    # v1
-    [2, 0],
-    # v2
-    [1],
-]
-
-ds = [(0, {2}, 500), (0, {1}, 500)]
-S = 1000
-
-
-solution = dr_bf_r.solve(g1, S, ds)
-
-validate_solution(g1, S, ds, solution)
+for p in problems:
+    g = p["graph"]
+    S = p["S"]
+    ds = p["demands"]
+    name = "dr_bf_r_{}".format(p["name"])
+    
+    print(f"problem: {name}")
+    
+    try:
+        solution = dr_bf_r.solve(g, S, ds, name=f"dr_bf_r_{name}")
+        validate_solution(g, S, ds, solution)
+    except Exception as ex:
+        print(ex)
+        continue
+    print(f"solution: {solution}")
+    print("validation: OK")
+    print()

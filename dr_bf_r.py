@@ -1,7 +1,7 @@
 from docplex.mp.model import Model
 
 
-def solve(graph, S, demands, name="dr_bf_r"):
+def solve(graph, S, demands, name="dr_bf_r", export=False):
     m = Model(name=name)
 
     # y_de variables
@@ -80,10 +80,17 @@ def solve(graph, S, demands, name="dr_bf_r"):
         m.add_constraint(l[d] <= r[d], ctname="right is greater than left")
 
     m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
-    m.print_information()
-    m.export_as_lp("{}.lp".format(name))
+    
+    if export:
+        m.print_information()
+    
+    if export:
+        m.export_as_lp("{}.lp".format(name))
+    
     solution = m.solve()
-    solution.export("{}.json".format(name))
+    
+    if export:
+        solution.export("{}.json".format(name))
 
 
     res = [[[[] for _ in range(len(graph))], (0, 0)] for _ in range(len(demands))]

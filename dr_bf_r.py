@@ -1,8 +1,8 @@
 from docplex.mp.model import Model
 
 
-def solve(graph, S, demands):
-    m = Model(name='Steiner Forest')
+def solve(graph, S, demands, name="dr_bf_r"):
+    m = Model(name=name)
 
     # y_de variables
     edges = []
@@ -81,6 +81,21 @@ def solve(graph, S, demands):
 
     m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
     m.print_information()
-    m.export_as_lp("prob.lp")
-    m.solve()
-    m.print_solution()
+    m.export_as_lp("{}.lp".format(name))
+    solution = m.solve()
+    solution.export("{}.json".format(name))
+
+
+    res = [[[[] for _ in range(len(graph))], (0, 0)] for _ in range(len(demands))]
+    for d, i, j in y:
+        if y[d, i, j].sv == 1:
+            demand_graph = res[d][0]
+            demand_graph[i].append(j)
+    for d in l:
+        res[d][1] = (l[d].sv, l[d].sv + demands[d][2])
+
+    for i, r in enumerate(res):
+        res[i] = (r[0], r[1])
+    m.end()
+
+    return res

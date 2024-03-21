@@ -1,11 +1,13 @@
 from docplex.mp.model import Model
 
 """
-drbr_mr is a drbr constraints system that generates a specific path per pair (demand, terminal) and then joins them all together.
-"""
-name = "dr_bf_mr"
+*** This formulation does not work, check the mrsa PDF ***
 
-def solve(graph, S, demands, name="dr_bf_r", export=False):
+drbr_r is a drbr constraints system that relaxes the flow constraints so that a node might have more than one outgoing arrow.
+"""
+name = "drbf_r"
+
+def solve(graph, S, demands, name=name, export=False):
     m = Model(name=name)
 
     # y_de variables
@@ -13,15 +15,12 @@ def solve(graph, S, demands, name="dr_bf_r", export=False):
     for u, outgoing in enumerate(graph):
         for v in outgoing:
             edges.append((u, v))
-
     y = m.binary_var_dict(keys=[(d, i, j) for d in range(len(demands)) for i, j in edges], name="y")
-    yp = m.binary_var_dict(keys=[(d, t, i, j) for d in range(len(demands)) for t in demands[d][1] for i, j in edges], name="y'")
-
 
     # p_dd' variables, p_dd' = 1 means that r_d < l_d'
     p = m.binary_var_dict(keys=[(d, d2) for d2 in range(len(demands)) for d in range(len(demands)) if d != d2], name="p")
 
-    # r_d variables and l_d variables (right and left slot allocation), if r_d = 200 then freq allocation for d starts at 200    
+    # r_d variables and l_d variables (right and left slot allocation), if r_d = 200 then freq allocation for d starts at 200
     r = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, ub=S-1, name="r")
     l = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, ub=S-1, name="l")
 
@@ -31,30 +30,43 @@ def solve(graph, S, demands, name="dr_bf_r", export=False):
         T = demands[d][1]
 
         for j, _ in enumerate(graph):
-            for t in T:    
-                incoming = []
-                outgoing = []
-                
-                for d2, t2, u, v in yp:
-                    if d != d2 or t != t2:
+            if j == s:
+                # source has no input edges
+                inputs = []
+                for d2, u, v in y:
+                    if d == d2 and v == j:
+                        inputs.append(y[d, u, v])
+                m.add_constraint(sum(inputs) == 0, ctname="source " + str(s) + " has no input edges")
+
+                # source has one output edge
+                outputs = []
+                for d2, u, v in y:
+                    # variable is source
+                    if d2 == d and u == j:
+                        outputs.append(y[d, u, v])
+                m.add_constraint(sum(outputs) >= 1, ctname="source " + str(s) + " has at least one output edge")
+            elif j in T:
+                inputs = []
+                for d2, u, v in y:
+                    if d2 == d and v == j:
+                        inputs.append(y[d, u, v])
+                m.add_constraint(sum(inputs) == 1, ctname="terminal " + str(j) + " has one input edge")
+            else:
+                inputs = []
+                outputs = []
+                for d2, u, v in y:
+                    if d2 != d:
                         continue
-                    if u == j:
-                        outgoing.append(yp[d2,t2,u,v])
+                    # incoming edge to j
                     if v == j:
-                        incoming.append(yp[d2,t2,u,v])
-                if j == s:
-                    m.add_constraint(sum(incoming) - sum(outgoing) == -1, ctname="at least one more outgoing than incoming for source")
-                elif j == t:
-                    m.add_constraint(sum(incoming) - sum(outgoing) == 1, ctname="at least one more incoming than outgoing for terminal")
-                else:
-                    m.add_constraint(sum(incoming) - sum(outgoing) == 0, ctname="same incoming as outgoing for non source/terminal")
-        for i, j in edges:
-            yps = []
-            for d2, t, u, v in yp:
-                if u == i and v == j and d2 == d:
-                    yps.append(yp[d2, t, u, v])
-            m.add_constraint(y[d,i,j]*len(T) >= sum(yps), ctname="if one yp is set, y must be set")
-            
+                        inputs.append(y[d, u, v])
+                    # outgoing edge from j
+                    if u == j:
+                        outputs.append(y[d, u, v])
+
+                for e in outputs:
+                    m.add_constraint(e <= sum(inputs), ctname="intermediate_flow for {}".format(j))
+
     # slot constraints
     for d1, d2 in p:
         if d1 > d2:
@@ -97,6 +109,6 @@ def solve(graph, S, demands, name="dr_bf_r", export=False):
 
     for i, r in enumerate(res):
         res[i] = (r[0], r[1])
-
     m.end()
+
     return res

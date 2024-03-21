@@ -1,7 +1,22 @@
 from sample_problems.problems import problems
-import dr_bf_r
-import dr_bf_mr
+import drbf_r
+import drbf_m
+import drbf_f
 
+
+def dfs(graph, start):
+    reached = []
+    
+    to_visit = [start]
+    while len(to_visit) > 0:
+        u = to_visit.pop()
+        if u in reached:
+            continue
+        reached.append(u)
+        to_visit =  to_visit + graph[u]
+
+    return reached
+    
 """
 Validate solution checks wether the given solution is valid.
 
@@ -11,8 +26,6 @@ Each element i is a tuple, t1_i and t2_i.
 * t1_i is the tree that satisfies the ith demand. Expressed as a list of ady.
 * t2_i is the slot allocation, it represented by [t2_i[0], t2_i[1])
 """
-
-
 def validate_solution(graph, S, demands, solution):
     """
     We generate a graph that joins all solutions and indicates the demand the edge belongs to
@@ -63,11 +76,18 @@ def validate_solution(graph, S, demands, solution):
                     if r1 > l2 and l1 < r2:
                         raise AssertionError(
                             f'overlap in allocation: demand_1={d1}=({l1},{r1}), demand_2={d2}=({l2},{r2})')
-
+    for d in range(len(demands)):
+        s = demands[d][0]
+        T = demands[d][1]
+        reached = dfs(solution[d][0], s)
+        for t in T:
+            if t not in reached:
+                raise AssertionError(f"cannot reach node {t} in demand solution {d}")
 
 solvers = [
-    dr_bf_r,
-    dr_bf_mr
+    #drbf_r,
+    drbf_m,
+    drbf_f,
 ]
 
 for s in solvers:
@@ -79,7 +99,7 @@ for s in solvers:
 
         print(f"problem: {name}")
         try:
-            solution = s.solve(g, S, ds)
+            solution = s.solve(g, S, ds, name=name, export=False)
             print(f"solution: {solution}")
             validate_solution(g, S, ds, solution)
 

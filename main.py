@@ -1,32 +1,23 @@
 from sample_problems.problems import problems
-import drbf_r
-import drbf_m
-import drbf_f
+from graph import dfs
+
+from solvers.drbf_r import Solver as DRBF_R
+from solvers.drbf_m import Solver as DRBF_M
+from solvers.drbf_f import Solver as DRBF_F
+from solvers.drbf_c import Solver as DRBF_C
 
 
-def dfs(graph, start):
-    reached = []
-    
-    to_visit = [start]
-    while len(to_visit) > 0:
-        u = to_visit.pop()
-        if u in reached:
-            continue
-        reached.append(u)
-        to_visit =  to_visit + graph[u]
-
-    return reached
-    
-"""
-Validate solution checks wether the given solution is valid.
-
-A solution is a list with an element per original demand.
-Each element i is a tuple, t1_i and t2_i.
-
-* t1_i is the tree that satisfies the ith demand. Expressed as a list of ady.
-* t2_i is the slot allocation, it represented by [t2_i[0], t2_i[1])
-"""
 def validate_solution(graph, S, demands, solution):
+    """
+    Validate solution checks wether the given solution is valid.
+
+    A solution is a list with an element per original demand.
+    Each element i is a tuple, t1_i and t2_i.
+
+    * t1_i is the tree that satisfies the ith demand. Expressed as a list of ady.
+    * t2_i is the slot allocation, it represented by [t2_i[0], t2_i[1])
+    """
+
     """
     We generate a graph that joins all solutions and indicates the demand the edge belongs to
 
@@ -85,9 +76,10 @@ def validate_solution(graph, S, demands, solution):
                 raise AssertionError(f"cannot reach node {t} in demand solution {d}")
 
 solvers = [
-    #drbf_r,
-    drbf_m,
-    drbf_f,
+    DRBF_R,
+    DRBF_M,
+    DRBF_F,
+    DRBF_C
 ]
 
 for s in solvers:
@@ -95,11 +87,10 @@ for s in solvers:
         g = p["graph"]
         S = p["S"]
         ds = p["demands"]
-        name = "{}_{}".format(s.name, p["name"])
-
-        print(f"problem: {name}")
+        solver = s(g, S, ds, name=p["name"])
+        print(f"problem: {solver._name}")
         try:
-            solution = s.solve(g, S, ds, name=name, export=False)
+            solution = solver.solve(export = False)
             print(f"solution: {solution}")
             validate_solution(g, S, ds, solution)
 

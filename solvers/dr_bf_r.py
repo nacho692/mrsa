@@ -1,18 +1,14 @@
 from docplex.mp.model import Model
-from cplex.callbacks import LazyConstraintCallback
-from docplex.mp.callbacks.cb_mixin import *
-from graph import dfs
 
 """
-drbr_c is a drbr constraints system which adds a cut based approach to guarantee the demands arborescense.
+*** This formulation does not work, check the mrsa PDF ***
 
-For each demand, every subgraph that constains the source node and does not contain a terminal, must have at least one ougoing edge.
+dr_bf_r is a drbr constraints system that relaxes the flow constraints so that a node might have more than one outgoing arrow.
 """
 
 T_graph = list[list[int]]
 
 class Solver():
-    
     _graph: list[list[int]]
     _name: str
     _S: int
@@ -22,9 +18,9 @@ class Solver():
         self._graph = graph
 
         if name != "":
-            self._name = "{}: {}".format("drbf_c", name)
+            self._name = "{}: {}".format("dr_bf_r", name)
         else:
-            self._name = "drbf_c"
+            self._name = "dr_bf_r"
 
         self._demands = demands
         self._S = S
@@ -39,7 +35,7 @@ class Solver():
 
         # y_de variables
         edges = []
-        for u, outgoing in enumerate(iterable=self._graph):
+        for u, outgoing in enumerate(graph):
             for v in outgoing:
                 edges.append((u, v))
         y = m.binary_var_dict(keys=[(d, i, j) for d in range(len(demands)) for i, j in edges], name="y")
@@ -51,18 +47,48 @@ class Solver():
         r = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, ub=S-1, name="r")
         l = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, ub=S-1, name="l")
 
-        # cut based constraints
-        for di, d in enumerate(demands):
-            s = d[0]
-            m.add_constraint(sum([y[di, s, o] for o in graph[s]]) >= 1)
+        # flow constraints
+        for d, _ in enumerate(demands):
+            s = demands[d][0]
+            T = demands[d][1]
 
-        cb = m.register_callback(DOLazyCallback)
-        cb._y = y
-        cb._l = l
-        cb._r = r
-        cb._graph = graph
-        cb._demands = demands
-        cb._export = export
+            for j, _ in enumerate(graph):
+                if j == s:
+                    # source has no input edges
+                    inputs = []
+                    for d2, u, v in y:
+                        if d == d2 and v == j:
+                            inputs.append(y[d, u, v])
+                    m.add_constraint(sum(inputs) == 0, ctname="source " + str(s) + " has no input edges")
+
+                    # source has one output edge
+                    outputs = []
+                    for d2, u, v in y:
+                        # variable is source
+                        if d2 == d and u == j:
+                            outputs.append(y[d, u, v])
+                    m.add_constraint(sum(outputs) >= 1, ctname="source " + str(s) + " has at least one output edge")
+                elif j in T:
+                    inputs = []
+                    for d2, u, v in y:
+                        if d2 == d and v == j:
+                            inputs.append(y[d, u, v])
+                    m.add_constraint(sum(inputs) == 1, ctname="terminal " + str(j) + " has one input edge")
+                else:
+                    inputs = []
+                    outputs = []
+                    for d2, u, v in y:
+                        if d2 != d:
+                            continue
+                        # incoming edge to j
+                        if v == j:
+                            inputs.append(y[d, u, v])
+                        # outgoing edge from j
+                        if u == j:
+                            outputs.append(y[d, u, v])
+
+                    for e in outputs:
+                        m.add_constraint(e <= sum(inputs), ctname="intermediate_flow for {}".format(j))
 
         # slot constraints
         for d1, d2 in p:
@@ -84,6 +110,19 @@ class Solver():
 
         m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
         
+        if export:
+            m.print_information()
+        
+        if export:
+            m.export_as_lp("{}.lp".format(name))
+        
+        solution = m.solve()
+        if solution == None:
+            raise AssertionError(f"Solution not found: {m.solve_details}")
+        if export:
+            solution.export("{}.json".format(name))
+
+
         if export:
             m.print_information()
         
@@ -123,45 +162,3 @@ def to_res(y, l, n, demands) -> list[tuple[T_graph, tuple[int, int]]]:
     for i in range(len(demands)):
         res.append((demand_graphs[i], slot_assignations[i]))
     return res
-
-class DOLazyCallback(ConstraintCallbackMixin, LazyConstraintCallback):
-    
-    _graph: list[list[int]]
-    _name: str
-    _S: int
-    _demands: list[tuple[int, set[int], int]]
-    _y: dict
-    _l: dict
-    _r: dict
-    _export: bool = False
-
-    def __init__(self, env):
-        LazyConstraintCallback.__init__(self, env)
-        ConstraintCallbackMixin.__init__(self)
-    
-    def __call__(self):
-        sol = self.make_complete_solution() 
-        
-        y = sol.get_value_dict(self._y)
-        l = sol.get_value_dict(self._l)
-        r = sol.get_value_dict(self._r)
-
-        res = to_res(y, l, len(self._graph), self._demands)
-        new_constraints = []
-        for di, d in enumerate(self._demands):
-            reached = set(dfs(res[di][0], d[0]))
-            T = d[1]
-            t_diff = T.difference(reached)
-            if len(t_diff) > 0:
-                outgoing_edges = set()
-                for r in reached:
-                    for outgoing in self._graph[r]:
-                        if outgoing not in reached:
-                            outgoing_edges.add(self._y[di, r, outgoing])
-                if self._export:
-                    print(f"Demand {di} not reaching some terminals: reached={reached}, diff={t_diff}")
-                new_constraints.append(sum(outgoing_edges) >= 1)
-
-        unsats = self.get_cpx_unsatisfied_cts(new_constraints, sol, tolerance=1e-6)
-        for _, cpx_lhs, sense, cpx_rhs in unsats:
-            self.add(cpx_lhs, sense, cpx_rhs)

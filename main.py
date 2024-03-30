@@ -1,10 +1,13 @@
 from sample_problems.problems import problems
 from graph import dfs
 
-from solvers.drbf_r import Solver as DRBF_R
-from solvers.drbf_m import Solver as DRBF_M
-from solvers.drbf_f import Solver as DRBF_F
-from solvers.drbf_c import Solver as DRBF_C
+from solvers.dr_bf_r import Solver as DR_BF_R
+from solvers.dr_bf_m import Solver as DR_BF_M
+from solvers.dr_bf_f import Solver as DR_BF_F
+from solvers.dr_bf_c import Solver as DR_BF_C
+from solvers.dr_aov_c import Solver as DR_AOV_C
+from solvers.dr_aov_f import Solver as DR_AOV_F
+from solvers.dr_aov_m import Solver as DR_AOV_M
 
 
 def validate_solution(graph, S, demands, solution):
@@ -76,12 +79,16 @@ def validate_solution(graph, S, demands, solution):
                 raise AssertionError(f"cannot reach node {t} in demand solution {d}")
 
 solvers = [
-    DRBF_R,
-    DRBF_M,
-    DRBF_F,
-    DRBF_C
+    #DR_BF_R,
+    #DR_BF_M,
+    #DR_BF_F,
+    #DR_BF_C,
+    DR_AOV_F,
+    DR_AOV_M,
+    DR_AOV_C,
 ]
 
+not_ok = []
 for s in solvers:
     for p in problems:
         g = p["graph"]
@@ -96,6 +103,12 @@ for s in solvers:
 
         except AssertionError as ex:
             print(ex)
+            not_ok.append({
+                "name": solver._name,
+                "error": ex,
+                })
             continue
         print("validation: OK")
         print()
+
+print(not_ok)

@@ -8,6 +8,7 @@ from solvers.dr_bf_c import Solver as DR_BF_C
 from solvers.dr_aov_c import Solver as DR_AOV_C
 from solvers.dr_aov_f import Solver as DR_AOV_F
 from solvers.dr_aov_m import Solver as DR_AOV_M
+from solvers.ds_bf_m import Solver as DS_BF_M
 
 
 def validate_solution(graph, S, demands, solution):
@@ -83,9 +84,10 @@ solvers = [
     #DR_BF_M,
     #DR_BF_F,
     #DR_BF_C,
-    DR_AOV_F,
-    DR_AOV_M,
-    DR_AOV_C,
+    #DR_AOV_F,
+    #DR_AOV_M,
+    #DR_AOV_C,
+    DS_BF_M,
 ]
 
 not_ok = []

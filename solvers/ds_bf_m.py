@@ -16,9 +16,9 @@ class Solver():
         self._graph = graph
 
         if name != "":
-            self._name = "{}: {}".format("dr_aov_m", name)
+            self._name = "{}: {}".format("ds_bf_m", name)
         else:
-            self._name = "dr_aov_m"
+            self._name = "ds_bf_m"
 
         self._demands = demands
         self._S = S
@@ -94,7 +94,8 @@ class Solver():
             v = demands[d][2]
             for s in range(v, S):
                 m.add_constraint(
-                    sum([x[d, s2] for s2 in range(S - v, s + 1)]) >= v*(x[d, s] - x[d, s+1]), 
+                    sum([x[d, s2] for s2 in range(S - v, s + 1)]) >= 
+                    v*(x[d, s] - x[d, s+1]), 
                     ctname="slots are continuous")
 
         for d in range(len(demands)):
@@ -104,13 +105,6 @@ class Solver():
 
         m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
         
-        solution = m.solve()
-        if solution == None:
-            raise AssertionError(f"Solution not found: {m.solve_details}")
-        if export:
-            solution.export("{}.json".format(name))
-
-
         if export:
             m.print_information()
         
@@ -118,13 +112,11 @@ class Solver():
             m.export_as_lp("{}.lp".format(name))
 
         solution = m.solve()
-        
         if solution == None:
             raise AssertionError(f"Solution not found: {m.solve_details}")
 
         if export:
             solution.export("{}.json".format(name))
-
 
         res = to_res(
             solution.get_value_dict(y), 

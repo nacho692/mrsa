@@ -9,6 +9,7 @@ from solvers.dr_aov_c import Solver as DR_AOV_C
 from solvers.dr_aov_f import Solver as DR_AOV_F
 from solvers.dr_aov_m import Solver as DR_AOV_M
 from solvers.ds_bf_m import Solver as DS_BF_M
+from solvers.dsl_bf_m import Solver as DSL_BF_M
 
 
 def validate_solution(graph, S, demands, solution):
@@ -87,19 +88,20 @@ solvers = [
     #DR_AOV_F,
     #DR_AOV_M,
     #DR_AOV_C,
-    DS_BF_M,
+    #DS_BF_M,
+    DSL_BF_M,
 ]
 
 not_ok = []
 for s in solvers:
-    for p in problems:
+    for p in problems[:1]:
         g = p["graph"]
         S = p["S"]
         ds = p["demands"]
         solver = s(g, S, ds, name=p["name"])
         print(f"problem: {solver._name}")
         try:
-            solution = solver.solve(export = False)
+            solution = solver.solve(export = True)
             print(f"solution: {solution}")
             validate_solution(g, S, ds, solution)
 

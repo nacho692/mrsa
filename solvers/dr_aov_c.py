@@ -92,7 +92,6 @@ class Solver():
             m.export_as_lp("{}.lp".format(name))
 
         solution = m.solve()
-        
         if solution == None:
             raise AssertionError(f"Solution not found: {m.solve_details}")
 

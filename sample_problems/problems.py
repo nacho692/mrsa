@@ -13,7 +13,7 @@ problems = [
         "S": 1,
     },
     {
-        "name": "two terminals",
+        "name": "two terminals simple",
         "graph": [
             # v0
             [1],
@@ -26,6 +26,32 @@ problems = [
         "S": 1,
     },
     {
+        "name": "two terminals",
+        "graph": [
+            # v0
+            [1],
+            # v1
+            [2],
+            # v2
+            [],
+        ],
+        "demands": [(0, {1, 2}, 2)],
+        "S": 2,
+    },
+    {
+        "name": "two demands simple",
+        "graph": [
+            # v0
+            [1],
+            # v1
+            [2],
+            # v2
+            [],
+        ],
+        "demands": [(0, {2}, 1), (0, {1}, 1)],
+        "S": 2,
+    },
+        {
         "name": "two demands",
         "graph": [
             # v0
@@ -35,8 +61,8 @@ problems = [
             # v2
             [1],
         ],
-        "demands": [(0, {2}, 500), (0, {1}, 500)],
-        "S": 1000,
+        "demands": [(0, {2}, 1), (0, {1}, 1)],
+        "S": 2,
     },
     {
         "name": "g2",

@@ -94,9 +94,9 @@ class Solver():
             v = demands[d][2]
             for s in range(v, S):
                 m.add_constraint(
-                    sum([x[d, s2] for s2 in range(S - v, s + 1)]) >= 
+                    sum([x[d, s2] for s2 in range(s - v, s + 1)]) >= 
                     v*(x[d, s] - x[d, s+1]), 
-                    ctname="slots are continuous")
+                    ctname="slots are contiguous")
 
         for d in range(len(demands)):
             v = demands[d][2]

@@ -60,7 +60,8 @@ def validate_solution(graph, S, demands, solution):
         if r > S:
             raise AssertionError(f'demand {d} allocates over S: r={r}, S={S}')
 
-    # Verify that demands allocation do not overlap on the same edge
+    # Verify that demands allocation do 
+    # not overlap on the same edge
     for outgoing in solcum_graph:
         for (_, used_by_demands) in outgoing:
             for d1 in used_by_demands:
@@ -88,13 +89,13 @@ solvers = [
     #DR_AOV_F,
     #DR_AOV_M,
     #DR_AOV_C,
-    #DS_BF_M,
-    DSL_BF_M,
+    DS_BF_M,
+    #DSL_BF_M,
 ]
 
 not_ok = []
 for s in solvers:
-    for p in problems[:1]:
+    for p in problems:
         g = p["graph"]
         S = p["S"]
         ds = p["demands"]

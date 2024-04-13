@@ -31,12 +31,12 @@ class Solver():
         graph = self._graph
         name = self._name
 
-        # y_de variables
         edges = []
         for u, outgoing in enumerate(graph):
             for v in outgoing:
                 edges.append((u, v))
-
+        print(edges)
+        # U_dets variables
         u = m.binary_var_dict(keys=[(d, i, j, t, s) 
                                     for d in range(len(demands)) 
                                     for i, j in edges
@@ -48,29 +48,33 @@ class Solver():
             T = demands[d][1]
             v = demands[d][2]
             for j, _ in enumerate(graph):
-                for t, sl in [(t, sl) for t in T for sl in range(0, S)]:
-                    incoming = []
-                    outgoing = []
-                    
-                    for d2, i2, j2, t2, sl2 in u:
-                        if d != d2 or t != t2 or sl != sl2:
+                for t in T:
+                    outgoing_sl = dict([(i, []) for i in range(0, S+1)])
+                    incoming_sl = dict([(i, []) for i in range(0, S+1)])
+                    for d2, i2, j2, t2, sl in u:
+                        if d != d2 or t != t2:
                             continue
                         if i2 == j:
-                            outgoing.append(u[d2,i2,j2,t2,sl2])
+                            outgoing_sl[sl].append(u[d2,i2,j2,t2,sl])
                         if j2 == j:
-                            incoming.append(u[d2,i2,j2,t2,sl2])
+                            incoming_sl[sl].append(u[d2,i2,j2,t2,sl])
                     if j == s:
-                        m.add_constraint(sum(incoming) - sum(outgoing) == -v, ctname="source has v outgoing")
+                        m.add_constraint(sum(sum(incoming_sl.values(), [])) - sum(sum(outgoing_sl.values(), [])) == -v, ctname="source has v outgoing")
                     elif j == t:
-                        m.add_constraint(sum(incoming) - sum(outgoing) == v, ctname="terminal has v incoming")
+                        m.add_constraint(sum(sum(incoming_sl.values(), [])) - sum(sum(outgoing_sl.values(), [])) == v, ctname="terminal has v incoming")
                     else:
-                        m.add_constraint(sum(incoming) - sum(outgoing) == 0, ctname="same incoming as outgoing for non source/terminal")
+                        for sl in range(0, S):
+                            m.add_constraint(ct=sum(incoming_sl[sl]) - sum(outgoing_sl[sl]) == 0, ctname="same incoming as outgoing for non source/terminal")
 
         # demands do not overlap sots
-        for e, t, sl in [(e, t, sl) 
-                         for e in edges
-                         for t in range(]
-            m.add_constraint(sum([u[d,i,j,t,s] for d2, i, j, t, s in u if d2 == d]) <= 1, 
+        for d, d2, e, t, t2, sl in [(d, d2, e, t, t2, sl)
+                                    for d in range(len(demands))
+                                    for d2 in range(len(demands)) if d != d2
+                                    for e in edges
+                                    for t in demands[d][1]
+                                    for t2 in demands[d2][1]
+                                    for sl in range(0, S)]:
+            m.add_constraint(u[d,e[0],e[1],t,sl] + u[d2,e[0],e[1],t2,sl] <= 1, 
                              ctname="demands do not overlap slots")
         
         for d, i, j, t in [(d, i, j, t)
@@ -79,14 +83,16 @@ class Solver():
                            for t in demands[d][1]]:
             m.add_constraint(u[d, i, j, t, S] == 0, ctname="s+1 is set to zero")
 
-        for d, i, j, t, sl in [(d, i, j, t, sl)
+        for d, e, t, sl in [(d, e, t, sl)
                            for d in range(len(demands))
-                           for i, j in edges
+                           for e in edges
                            for t in demands[d][1]
-                           for sl in range(demands[d][2], S)]:
+                           for sl in range(demands[d][2]-1, S)]:
             v = demands[d][2]
+            i = e[0]
+            j = e[1]
             m.add_constraint(
-                sum(u[d,i,j,t,sl2] for sl2 in range(S-v, sl+1)) >= 
+                sum(u[d,i,j,t,sl2] for sl2 in range(sl-v+1, sl+1)) >= 
                 v*(u[d,i,j,t,sl] - u[d,i,j,t,sl+1]),
                 ctname="slots are contiguous")
 
@@ -96,11 +102,11 @@ class Solver():
                            for e2 in edges
                            for t in demands[d][1]
                            for t2 in demands[d][1] if t != t2
-                           for sl in range(1, S)]:
+                           for sl in range(0, S)]:
             v = demands[d][2]
             m.add_constraint(
                 sum(u[d,e[0],e[1],t,sl2] for sl2 in range(0, S)) <= 
-                v*(1 - u[d,e2[0],e2[1],t2,sl] - u[d,e[0],e[1],t,sl]),
+                v*(1 - u[d,e2[0],e2[1],t2,sl] + u[d,e[0],e[1],t,sl]),
                 ctname="demand/terminal pair path use the same slots")
             
         m.set_objective("min", 
@@ -135,7 +141,8 @@ def to_res(u, n, demands) -> list[tuple[T_graph, tuple[int, int]]]:
     for d, i, j, t, sl in u:
         if u[d, i, j, t, sl] == 1:
             demand_graph = demand_graphs[d]
-            demand_graph[i].append(j)
+            if j not in demand_graph[i]:
+                demand_graph[i].append(j)
             if slot_assignations[d][0] == slot_assignations[d][1] or sl < slot_assignations[d][0]:
                 slot_assignations[d] = (int(sl), int(sl) + demands[d][2])
 

@@ -120,6 +120,9 @@ class Solver():
 
         return res
 
+    def name(self):
+        return self._name
+
 def to_res(y, l, n, demands) -> list[tuple[T_graph, tuple[int, int]]]:
     demand_graphs = [[[] for _ in range(n)] for _ in range(len(demands))]
     for d, i, j in y:

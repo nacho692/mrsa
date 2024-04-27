@@ -23,7 +23,7 @@ class Solver():
         self._demands = demands
         self._S = S
 
-    def solve(self, export=False):
+    def solve(self, export=False) -> list[tuple[T_graph, tuple[int, int]]]:
         m = Model(name=self._name)
 
         demands = self._demands
@@ -133,6 +133,9 @@ class Solver():
         m.end()
 
         return res
+    
+    def name(self):
+        return self._name
 
 def to_res(u, n, demands) -> list[tuple[T_graph, tuple[int, int]]]:
     demand_graphs = [[[] for _ in range(n)] for _ in range(len(demands))]

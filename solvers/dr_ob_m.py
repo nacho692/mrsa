@@ -1,4 +1,5 @@
 from docplex.mp.model import Model
+
 import math
 
 """
@@ -17,9 +18,9 @@ class Solver():
         self._graph = graph
 
         if name != "":
-            self._name = "{}: {}".format("dr_bf_m", name)
+            self._name = "{}: {}".format("dr_ob_m", name)
         else:
-            self._name = "dr_bf_m"
+            self._name = "dr_ob_m"
 
         self._demands = demands
         self._S = S
@@ -45,8 +46,7 @@ class Solver():
         # p_dd' variables, p_dd' = 1 means that r_d < l_d'
         p = m.binary_var_dict(keys=[(d, d2) for d2 in range(len(demands)) for d in range(len(demands)) if d != d2], name="p")
 
-        # r_d variables and l_d variables (right and left slot allocation), if r_d = 200 then freq allocation for d starts at 200    
-        r = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, ub=S-1, name="r")
+        # l_d variables (left slot allocation), if l_d = 200 then freq allocation for d starts at 200    
         l = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, ub=S-1, name="l")
 
         # flow constraints
@@ -84,18 +84,13 @@ class Solver():
             if d1 > d2:
                 m.add_constraint(p[d1,d2] + p[d2,d1] == 1, ctname="either d1 is before d2 or d2 is before d1")
 
-
         # demands do not overlap
         for d1, d2 in p:
             for i, j in edges:
-                m.add_constraint(r[d1] + 1 <= l[d2] + S*(3-p[d1,d2] - y[d1,i,j] - y[d2, i, j]), ctname="avoid overlap between demands")     
-        
-        # difference between right and left is slots required per demand
-        for d in range(len(demands)):
-            m.add_constraint(r[d] - l[d] + 1 == demands[d][2], ctname="slots are the required amount")
+                m.add_constraint(demands[d1][2] + l[d1] <= l[d2] + S*(3-p[d1,d2] - y[d1,i,j] - y[d2,i,j]), ctname="avoid overlap between demands")
 
-        for d in range(len(demands)):
-            m.add_constraint(l[d] <= r[d], ctname="right is greater than left")
+        for d in l:
+            m.add_constraint(l[d] + demands[d][2] <= S)
 
         m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
         

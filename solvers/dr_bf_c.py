@@ -2,6 +2,7 @@ from docplex.mp.model import Model
 from cplex.callbacks import LazyConstraintCallback
 from docplex.mp.callbacks.cb_mixin import *
 from graph import dfs
+import math
 
 """
 dr_bf_c is a drbr constraints system which adds a cut based approach to guarantee the demands arborescense.
@@ -112,13 +113,13 @@ class Solver():
 def to_res(y, l, n, demands) -> list[tuple[T_graph, tuple[int, int]]]:
     demand_graphs = [[[] for _ in range(n)] for _ in range(len(demands))]
     for d, i, j in y:
-        if y[d, i, j] == 1:
+        if abs(y[d, i, j] - 1) <= 0.001:
             demand_graph = demand_graphs[d]
             demand_graph[i].append(j)
     
     slot_assignations = [(int(0), int(0)) for _ in range(len(demands))]
     for d in l:
-        slot_assignations[d] = (int(l[d]), int(l[d]) + demands[d][2])
+        slot_assignations[d] = (math.ceil(l[d]), math.ceil(l[d]) + demands[d][2])
 
     res = []
     for i in range(len(demands)):

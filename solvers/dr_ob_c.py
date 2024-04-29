@@ -1,13 +1,19 @@
 from docplex.mp.model import Model
+from cplex.callbacks import LazyConstraintCallback
+from docplex.mp.callbacks.cb_mixin import *
+from graph import dfs
 import math
 
 """
-drbr_mr is a drbr constraints system that generates a specific path per pair (demand, terminal) and then joins them all together.
+dr_ob_c is a drbr constraints system which adds a cut based approach to guarantee the demands arborescense.
+
+For each demand, every subgraph that constains the source node and does not contain a terminal, must have at least one ougoing edge.
 """
 
 T_graph = list[list[int]]
 
 class Solver():
+    
     _graph: list[list[int]]
     _name: str
     _S: int
@@ -17,9 +23,9 @@ class Solver():
         self._graph = graph
 
         if name != "":
-            self._name = "{}: {}".format("dr_bf_m", name)
+            self._name = "{}: {}".format("dr_ob_c", name)
         else:
-            self._name = "dr_bf_m"
+            self._name = "dr_ob_c"
 
         self._demands = demands
         self._S = S
@@ -34,69 +40,39 @@ class Solver():
 
         # y_de variables
         edges = []
-        for u, outgoing in enumerate(graph):
+        for u, outgoing in enumerate(iterable=self._graph):
             for v in outgoing:
                 edges.append((u, v))
-
         y = m.binary_var_dict(keys=[(d, i, j) for d in range(len(demands)) for i, j in edges], name="y")
-        yp = m.binary_var_dict(keys=[(d, t, i, j) for d in range(len(demands)) for t in demands[d][1] for i, j in edges], name="y'")
-
 
         # p_dd' variables, p_dd' = 1 means that r_d < l_d'
         p = m.binary_var_dict(keys=[(d, d2) for d2 in range(len(demands)) for d in range(len(demands)) if d != d2], name="p")
 
-        # r_d variables and l_d variables (right and left slot allocation), if r_d = 200 then freq allocation for d starts at 200    
-        r = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, ub=S-1, name="r")
+        # l_d variables (left slot allocation), if l_d = 200 then freq allocation for d starts at 200
         l = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, ub=S-1, name="l")
 
-        # flow constraints
-        for d, _ in enumerate(demands):
-            s = demands[d][0]
-            T = demands[d][1]
+        # cut based constraints
+        for di, d in enumerate(demands):
+            s = d[0]
+            m.add_constraint(sum([y[di, s, o] for o in graph[s]]) >= 1)
 
-            for j, _ in enumerate(graph):
-                for t in T:    
-                    incoming = []
-                    outgoing = []
-                    
-                    for d2, t2, u, v in yp:
-                        if d != d2 or t != t2:
-                            continue
-                        if u == j:
-                            outgoing.append(yp[d2,t2,u,v])
-                        if v == j:
-                            incoming.append(yp[d2,t2,u,v])
-                    if j == s:
-                        m.add_constraint(sum(incoming) - sum(outgoing) == -1, ctname="at least one more outgoing than incoming for source")
-                    elif j == t:
-                        m.add_constraint(sum(incoming) - sum(outgoing) == 1, ctname="at least one more incoming than outgoing for terminal")
-                    else:
-                        m.add_constraint(sum(incoming) - sum(outgoing) == 0, ctname="same incoming as outgoing for non source/terminal")
-            for i, j in edges:
-                yps = []
-                for d2, t, u, v in yp:
-                    if u == i and v == j and d2 == d:
-                        yps.append(yp[d2, t, u, v])
-                m.add_constraint(y[d,i,j]*len(T) >= sum(yps), ctname="if one yp is set, y must be set")
-                
+        cb = m.register_callback(DOLazyCallback)
+        cb._y = y
+        cb._l = l
+        cb._graph = graph
+        cb._demands = demands
+        cb._export = export
+
         # slot constraints
         for d1, d2 in p:
             if d1 > d2:
                 m.add_constraint(p[d1,d2] + p[d2,d1] == 1, ctname="either d1 is before d2 or d2 is before d1")
 
-
         # demands do not overlap
         for d1, d2 in p:
             for i, j in edges:
-                m.add_constraint(r[d1] + 1 <= l[d2] + S*(3-p[d1,d2] - y[d1,i,j] - y[d2, i, j]), ctname="avoid overlap between demands")     
+                m.add_constraint(demands[d1][2] + l[d1] <= l[d2] + S*(3-p[d1,d2] - y[d1,i,j] - y[d2, i, j]), ctname="avoid overlap between demands")     
         
-        # difference between right and left is slots required per demand
-        for d in range(len(demands)):
-            m.add_constraint(r[d] - l[d] + 1 == demands[d][2], ctname="slots are the required amount")
-
-        for d in range(len(demands)):
-            m.add_constraint(l[d] <= r[d], ctname="right is greater than left")
-
         m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
         
         if export:
@@ -139,3 +115,43 @@ def to_res(y, l, n, demands) -> list[tuple[T_graph, tuple[int, int]]]:
     for i in range(len(demands)):
         res.append((demand_graphs[i], slot_assignations[i]))
     return res
+
+class DOLazyCallback(ConstraintCallbackMixin, LazyConstraintCallback):
+    
+    _graph: list[list[int]]
+    _name: str
+    _S: int
+    _demands: list[tuple[int, set[int], int]]
+    _y: dict
+    _l: dict
+    _export: bool = False
+
+    def __init__(self, env):
+        LazyConstraintCallback.__init__(self, env)
+        ConstraintCallbackMixin.__init__(self)
+    
+    def __call__(self):
+        sol = self.make_complete_solution() 
+        
+        y = sol.get_value_dict(self._y)
+        l = sol.get_value_dict(self._l)
+
+        res = to_res(y, l, len(self._graph), self._demands)
+        new_constraints = []
+        for di, d in enumerate(self._demands):
+            reached = set(dfs(res[di][0], d[0]))
+            T = d[1]
+            t_diff = T.difference(reached)
+            if len(t_diff) > 0:
+                outgoing_edges = set()
+                for r in reached:
+                    for outgoing in self._graph[r]:
+                        if outgoing not in reached:
+                            outgoing_edges.add(self._y[di, r, outgoing])
+                if self._export:
+                    print(f"Demand {di} not reaching some terminals: reached={reached}, diff={t_diff}")
+                new_constraints.append(sum(outgoing_edges) >= 1)
+
+        unsats = self.get_cpx_unsatisfied_cts(new_constraints, sol, tolerance=1e-6)
+        for _, cpx_lhs, sense, cpx_rhs in unsats:
+            self.add(cpx_lhs, sense, cpx_rhs)

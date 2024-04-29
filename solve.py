@@ -69,7 +69,7 @@ def validate_solution(graph, S, demands, solution):
             if t not in reached:
                 raise AssertionError(f"cannot reach node {t} in demand solution {d}")
 
-def solve(solvers: list, problems: list[dict], validate = False):
+def solve(solvers: list, problems: list[dict], export = False, validate = False):
     not_ok = []
     for s in solvers:
         for p in problems:
@@ -79,7 +79,7 @@ def solve(solvers: list, problems: list[dict], validate = False):
             solver = s(g, S, ds, name=p["name"])
             print(f"problem: {solver._name}")
             try:
-                solution = solver.solve(export = True)
+                solution = solver.solve(export = export)
                 print(f"solution: {solution}")
                 if validate:
                     validate_solution(g, S, ds, solution)

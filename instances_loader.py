@@ -46,6 +46,7 @@ class Loader:
         for line in file:
             l = line.split()
             graph[int(l[0])].append(int(l[1]))
+            graph[int(l[1])].append(int(l[0]))
 
         return graph
 
@@ -64,12 +65,9 @@ class Loader:
             if source not in d:
                 d[source] = [[], 0]
             d[source][0].append(int(terminal))
-            d[source][1] += int(slots)
-
+            d[source][1] = int(slots)
         demands = []
         for k, v in d.items():
-            demands.append((k, set(v[0]), v[1]))
+            demands.append((int(k), set(v[0]), v[1]))
 
-        return demands, S
-
-Loader.load()
+        return demands, int(S)

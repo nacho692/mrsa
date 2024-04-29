@@ -35,7 +35,7 @@ class Solver():
         for u, outgoing in enumerate(graph):
             for v in outgoing:
                 edges.append((u, v))
-        print(edges)
+
         # U_dets variables
         u = m.binary_var_dict(keys=[(d, i, j, t, s) 
                                     for d in range(len(demands)) 
@@ -142,7 +142,7 @@ def to_res(u, n, demands) -> list[tuple[T_graph, tuple[int, int]]]:
     slot_assignations = [(int(0), int(0)) for _ in range(len(demands))]
 
     for d, i, j, t, sl in u:
-        if u[d, i, j, t, sl] == 1:
+        if abs(u[d, i, j, t, sl] - 1) <= 0.001:
             demand_graph = demand_graphs[d]
             if j not in demand_graph[i]:
                 demand_graph[i].append(j)

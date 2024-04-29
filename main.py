@@ -1,6 +1,7 @@
-from sample_problems.problems import problems
+from sample_problems.problems import problems as def_problems
 
 import solve
+from instances_loader import Loader
 
 from solvers.dr_bf_r import Solver as DR_BF_R
 from solvers.dr_bf_m import Solver as DR_BF_M
@@ -12,22 +13,28 @@ from solvers.dr_aov_m import Solver as DR_AOV_M
 from solvers.ds_bf_m import Solver as DS_BF_M
 from solvers.dsl_bf_m import Solver as DSL_BF_M
 
+# Generated Instances
+# problems = [ p for p in Loader.load() if len(p["graph"]) < 10]
+
+# Default Problems
+problems = [ p for p in def_problems ]
 
 
 solvers = [
-    #DR_BF_R,
-    #DR_BF_M,
-    #DR_BF_F,
-    #DR_BF_C,
-    #DR_AOV_F,
-    #DR_AOV_M,
-    #DR_AOV_C,
+    # DR_BF_R <- Does not work, see doc or pdf,
+    DR_BF_M,
+    DR_BF_F,
+    DR_BF_C,
+    DR_AOV_F,
+    DR_AOV_M,
+    DR_AOV_C,
     DS_BF_M,
-    #DSL_BF_M,
+    # DSL_BF_M,# 
 ]
 
 solve.solve(
     solvers,
     problems,
-    True
+    export=False,
+    validate=True
 )

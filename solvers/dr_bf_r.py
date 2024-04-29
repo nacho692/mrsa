@@ -138,7 +138,7 @@ class Solver():
 def to_res(y, l, n, demands) -> list[tuple[T_graph, tuple[int, int]]]:
     demand_graphs = [[[] for _ in range(n)] for _ in range(len(demands))]
     for d, i, j in y:
-        if y[d, i, j] == 1:
+        if abs(y[d, i, j] - 1) <= 0.001:
             demand_graph = demand_graphs[d]
             demand_graph[i].append(j)
     

@@ -5,7 +5,7 @@ from graph import dfs
 import math
 
 """
-dr_bf_c is a drbr constraints system which adds a cut based approach to guarantee the demands arborescense.
+dr_sc_c is a drbr constraints system which adds a cut based approach to guarantee the demands arborescense.
 
 For each demand, every subgraph that constains the source node and does not contain a terminal, must have at least one ougoing edge.
 """
@@ -23,9 +23,9 @@ class Solver():
         self._graph = graph
 
         if name != "":
-            self._name = "{}: {}".format("dr_bsa_c", name)
+            self._name = "{}: {}".format("dr_sc_c", name)
         else:
-            self._name = "dr_bsa_c"
+            self._name = "dr_sc_c"
 
         self._demands = demands
         self._S = S
@@ -64,13 +64,13 @@ class Solver():
         for d in range(len(demands)):
             m.add_constraint(sum([l[d,s] for s in range(S-demands[d][2]+1)]) == 1, ctname="every demand must have a left binary slot assignation")
         
-        for d1,d2,i,j,s in [(d1,d2, e[0], e[1], s) 
+        for d1,d2,e,s,i in [(d1,d2, e, s, i) 
                 for d1 in range(len(demands))
                 for d2 in range(len(demands)) if d1 != d2
                 for e in edges
-                for s in range(S-demands[d1][2]+1)]:
-            lsum = sum([l[d2,s2] for s2 in range(s, s+demands[d1][2])])
-            m.add_constraint(lsum <= 3 - y[d1,i,j] - y[d2,i,j] - l[d1,s], ctname="avoid overlapping between demand slots")
+                for s in range(S-demands[d1][2]+1)
+                for i in range(demands[d1][2])]:
+            m.add_constraint(l[d2,s+i] <= 3 - y[d1,e[0],e[1]] - y[d2,e[0],e[1]] - l[d1,s], ctname="avoid overlapping between demand slots")
 
         m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
         

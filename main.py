@@ -17,6 +17,10 @@ from solvers.dr_bsa_m import Solver as DR_BSA_M
 from solvers.dr_bsa_f import Solver as DR_BSA_F
 from solvers.dr_bsa_c import Solver as DR_BSA_C
 
+from solvers.dr_sc_m import Solver as DR_SC_M
+from solvers.dr_sc_f import Solver as DR_SC_F
+from solvers.dr_sc_c import Solver as DR_SC_C
+
 from solvers.dr_aov_f import Solver as DR_AOV_F
 from solvers.dr_aov_m import Solver as DR_AOV_M
 from solvers.dr_aov_c import Solver as DR_AOV_C
@@ -44,13 +48,18 @@ solvers = [
 
     #DR_BSA_M,
     #DR_BSA_F,
-    DR_BSA_C,
+    #DR_BSA_C,
+
+    DR_SC_M,
+    DR_SC_F,
+    DR_SC_C,
 
     #DR_AOV_F,
     #DR_AOV_M,
     #DR_AOV_C,
 
     #DS_BF_M,
+
     #DSL_BF_M,
 ]
 

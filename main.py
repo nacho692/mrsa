@@ -25,6 +25,10 @@ from solvers.dr_aov_f import Solver as DR_AOV_F
 from solvers.dr_aov_m import Solver as DR_AOV_M
 from solvers.dr_aov_c import Solver as DR_AOV_C
 
+from solvers.ds_bf_m import Solver as DS_BF_M
+from solvers.ds_bf_f import Solver as DS_BF_F
+from solvers.ds_bf_c import Solver as DS_BF_C
+
 from solvers.nls_f import Solver as NLS_F
 from solvers.nls_m import Solver as NLS_M
 from solvers.nls_c import Solver as NLS_C
@@ -34,7 +38,7 @@ from solvers.ds_bf_m import Solver as DS_BF_M
 from solvers.dsl_bf_m import Solver as DSL_BF_M
 
 # Generated Instances
-problems = [ p for p in Loader.load() if len(p["graph"]) <= 10]
+problems = [ p for p in Loader.load() if len(p["graph"]) <= 10 ]
 
 # Default Problems
 #problems = [ p for p in def_problems]
@@ -62,11 +66,13 @@ solvers = [
     #DR_AOV_M,
     #DR_AOV_C,
 
-    NLS_F,
-    NLS_M,
-    NLS_C,
+    DS_BF_F,
+    DS_BF_M,
+    DS_BF_C,
 
-    #DS_BF_M,
+    #NLS_F,
+    #NLS_M,
+    #NLS_C,
 
     #DSL_BF_M,
 ]

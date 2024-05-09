@@ -25,6 +25,10 @@ from solvers.dr_aov_f import Solver as DR_AOV_F
 from solvers.dr_aov_m import Solver as DR_AOV_M
 from solvers.dr_aov_c import Solver as DR_AOV_C
 
+from solvers.nls_f import Solver as NLS_F
+from solvers.nls_m import Solver as NLS_M
+from solvers.nls_c import Solver as NLS_C
+
 from solvers.ds_bf_m import Solver as DS_BF_M
 
 from solvers.dsl_bf_m import Solver as DSL_BF_M
@@ -50,13 +54,17 @@ solvers = [
     #DR_BSA_F,
     #DR_BSA_C,
 
-    DR_SC_M,
-    DR_SC_F,
-    DR_SC_C,
+    #DR_SC_M,
+    #DR_SC_F,
+    #DR_SC_C,
 
     #DR_AOV_F,
     #DR_AOV_M,
     #DR_AOV_C,
+
+    NLS_F,
+    NLS_M,
+    NLS_C,
 
     #DS_BF_M,
 

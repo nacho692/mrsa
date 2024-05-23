@@ -29,6 +29,10 @@ from solvers.ds_bf_m import Solver as DS_BF_M
 from solvers.ds_bf_f import Solver as DS_BF_F
 from solvers.ds_bf_c import Solver as DS_BF_C
 
+from solvers.ds_acc_m import Solver as DS_ACC_M
+from solvers.ds_acc_f import Solver as DS_ACC_F
+from solvers.ds_acc_c import Solver as DS_ACC_C
+
 from solvers.nls_f import Solver as NLS_F
 from solvers.nls_m import Solver as NLS_M
 from solvers.nls_c import Solver as NLS_C
@@ -36,9 +40,11 @@ from solvers.nls_c import Solver as NLS_C
 from solvers.ds_bf_m import Solver as DS_BF_M
 
 from solvers.dsl_bf_m import Solver as DSL_BF_M
+from solvers.dsl_bf_c import Solver as DSL_BF_C
 
 # Generated Instances
-problems = [ p for p in Loader.load() if len(p["graph"]) <= 10 ]
+problems = [ p for p in Loader.load() if len(p["graph"]) < 10 and p["name"] == "6n-9m-n6s9_25_8_17"]
+#problems[0]["demands"] = [problems[0]["demands"][0]]
 
 # Default Problems
 #problems = [ p for p in def_problems]
@@ -66,20 +72,26 @@ solvers = [
     #DR_AOV_M,
     #DR_AOV_C,
 
-    DS_BF_F,
-    DS_BF_M,
-    DS_BF_C,
+    #DS_BF_F,
+    #DS_BF_M,
+    #DS_BF_C,
+
+    #DS_ACC_M,
+    #DS_ACC_F,
+    #DS_ACC_C,
 
     #NLS_F,
     #NLS_M,
     #NLS_C,
 
     #DSL_BF_M,
+    #DSL_BF_C
 ]
+print(problems)
 
 solve.solve(
     solvers,
-    problems,
-    export=False,
+    problems=problems,
+    export=True,
     validate=True
 )

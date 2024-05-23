@@ -1,0 +1,210 @@
+from docplex.mp.model import Model
+from cplex.callbacks import LazyConstraintCallback
+from docplex.mp.callbacks.cb_mixin import *
+from graph import dfs
+import math
+
+"""
+dsl_bf_c is a single family variable constraints system which adds a cut based approach to guarantee the demands arborescense.
+
+For each demand, every subgraph that constains the source node and does not contain a terminal, must have at least one ougoing edge.
+"""
+
+T_graph = list[list[int]]
+
+class Solver():
+    
+    _graph: list[list[int]]
+    _name: str
+    _S: int
+    _demands: list[tuple[int, set[int], int]]
+    
+    def __init__(self, graph: T_graph, S: int, demands: list[tuple[int, set[int], int]], name: str = "") -> None:
+        self._graph = graph
+
+        if name != "":
+            self._name = "{}: {}".format("dsl_bf_c", name)
+        else:
+            self._name = "dsl_bf_c"
+
+        self._demands = demands
+        self._S = S
+
+    def solve(self, export=False):
+        m = Model(name=self._name)
+
+        demands = self._demands
+        S = self._S
+        graph = self._graph
+        name = self._name
+
+        # y_de variables
+        edges = []
+        for u, outgoing in enumerate(iterable=self._graph):
+            for v in outgoing:
+                edges.append((u, v))
+        u = m.binary_var_dict(keys=[
+            (d, i, j, s) 
+            for d in range(len(demands)) 
+            for i, j in edges
+            for s in range(S+1)], name="u")
+
+        # cut based constraints
+        for d in range(len(demands)):
+            i = demands[d][0]
+            v = demands[d][2]
+            T = demands[d][1]
+            m.add_constraint(sum([u[d, i, j, s] 
+                                  for j in graph[i]
+                                  for s in range(S)]) >= v, ctname="initial cut based constraint")
+
+        cb = m.register_callback(DOLazyCallback)
+        cb._u = u
+        cb._S = S
+        cb._graph = graph
+        cb._demands = demands
+        cb._export = export
+
+        # slot constraints
+        for e, s in [(e, s)
+                      for e in edges
+                      for s in range(S)]:
+              m.add_constraint(sum([u[d,e[0],e[1],s] for d in range(len(demands))]) <= 1, ctname="demands do not overlap")
+
+        for e in edges:
+             m.add_constraint(sum([u[d,e[0],e[1],S] for d in range(len(demands))]) == 0, ctname="u_deS is 0 for all d,e")
+
+        for d, e, s in [(d, e, s)
+                         for d in range(len(demands))
+                         for e in edges
+                         for s in range(demands[d][2]-1, S)]:
+             v: int = demands[d][2]
+             lsum = sum([u[d,e[0],e[1],s2] for s2 in range(s-v+1, s+1)])
+             m.add_constraint(lsum >= v*(u[d,e[0],e[1],s] - u[d,e[0],e[1],s+1]),
+                                   ctname=f"slots are contiguous and demand satisfied from {s-v+1}, s {s}")
+            
+        for d, e, s in [(d, e, s)
+                        for d in range(len(demands))
+                        for e in edges
+                        for s in range(0, demands[d][2])]:
+            v: int = demands[d][2]
+            lsum = sum([u[d,e[0],e[1],s2] for s2 in range(0, v)])
+            m.add_constraint(lsum >= v*(u[d,e[0],e[1],s] - u[d,e[0],e[1],s+1]),
+                                  ctname=f"base slots are contiguous and demand satisfied from {0}, s {s}")
+            
+        m.set_objective("min", 1)
+        
+        if export:
+            m.print_information()
+        
+        if export:
+            m.export_as_lp("{}.lp".format(name))
+
+        solution = m.solve(log_output=True)
+        if solution == None:
+            raise AssertionError(f"Solution not found: {m.solve_details}")
+
+        if export:
+            solution.export("{}.json".format(name))
+
+        res = to_res(
+            solution.get_value_dict(u), 
+            len(graph), demands, S)
+        m.end()
+
+        return res
+
+    def name(self):
+        return self._name
+
+def to_res(u, n, demands, S) -> list[tuple[T_graph, tuple[int, int]]]:
+    
+    slot_assignations = [(int(S), int(S)) for _ in range(len(demands))]
+    for d, i, j, s in u:
+        if abs(u[d, i, j, s] - 1) < 0.001:
+            # We only consider slots taken from the source itself 
+            if demands[d][0] == i:
+                v = demands[d][2]
+                if s < slot_assignations[d][0]:
+                    slot_assignations[d] = (s, s+v)
+
+    demand_graphs = [[[] for _ in range(n)] for _ in range(len(demands))]
+    for d, i, j, s in u:
+        if s not in range(slot_assignations[d][0], slot_assignations[d][1]):
+            continue
+            
+        if abs(u[d, i, j, s] - 1) < 0.001:
+            demand_graph = demand_graphs[d]
+            if j not in demand_graph[i]:
+                demand_graph[i].append(j)
+
+    res = []
+    for i in range(len(demands)):
+        res.append((demand_graphs[i], slot_assignations[i]))
+    return res
+
+def to_graph(u, n, d_filter, s_filter) -> T_graph:
+    
+    demand_graph = [[] for _ in range(n)]
+    for d, i, j, s in u:
+        if d != d_filter:
+            continue
+        if s_filter != None and s_filter != s:
+            continue
+        if abs(u[d, i, j, s] - 1) < 0.001:
+            if j not in demand_graph[i]:
+                demand_graph[i].append(j)
+
+    return demand_graph
+
+class DOLazyCallback(ConstraintCallbackMixin, LazyConstraintCallback):
+    
+    _graph: list[list[int]]
+    _name: str
+    _S: int
+    _demands: list[tuple[int, set[int], int]]
+    _u: dict
+    _export: bool = False
+
+    def __init__(self, env):
+        LazyConstraintCallback.__init__(self, env)
+        ConstraintCallbackMixin.__init__(self)
+    
+    def __call__(self):
+        sol = self.make_complete_solution() 
+        
+        u = sol.get_value_dict(self._u)
+
+        
+        new_constraints = []
+        for d, s in [(d, s) 
+                     for d in range(len(self._demands))
+                     for s in range(self._S)]:
+            
+            demand = self._demands[d]
+
+            res = to_graph(u, len(self._graph), d, s)
+            reached = set(dfs(res, demand[0]))
+            T = demand[1]
+
+            t_diff = T.difference(reached)
+            if len(t_diff) > 0:
+                outgoing_edges = set()
+                inside_edges = set()
+                for r in reached:
+                    for outgoing in self._graph[r]:
+                        if outgoing not in reached:
+                            outgoing_edges |= set([self._u[d, r, outgoing, s]])
+                        else:
+                            inside_edges |= set([self._u[d, r, outgoing, s]])
+
+                lsum = sum(outgoing_edges)
+                rsum = sum(inside_edges)
+                new_constraints.append(lsum*len(inside_edges) >= rsum)
+
+                if self._export:
+                    print(f"demand:{d} slot:{s} not reaching some terminals: reached={reached}, diff={t_diff}")
+
+        unsats = self.get_cpx_unsatisfied_cts(new_constraints, sol, tolerance=1e-6)
+        for _, cpx_lhs, sense, cpx_rhs in unsats:
+            self.add(cpx_lhs, sense, cpx_rhs)

@@ -60,7 +60,7 @@ def validate_solution(graph, S, demands, solution):
                     (l2, r2) = solution[d2][1]
                     if r1 > l2 and l1 < r2:
                         raise AssertionError(
-                            f'overlap in allocation: demand_1={d1}=({l1},{r1}), demand_2={d2}=({l2},{r2})')
+                            f'overlap in allocation: demand_{d1}=({l1},{r1},v={demands[d1][2]}), demand_{d2}=({l2},{r2},v={demands[d2][2]})')
     for d in range(len(demands)):
         s = demands[d][0]
         T = demands[d][1]

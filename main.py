@@ -43,7 +43,7 @@ from solvers.dsl_bf_m import Solver as DSL_BF_M
 from solvers.dsl_bf_c import Solver as DSL_BF_C
 
 # Generated Instances
-problems = [ p for p in Loader.load() if len(p["graph"]) < 10 and p["name"] == "6n-9m-n6s9_25_8_17"]
+problems = [ p for p in Loader.load() if len(p["graph"]) <= 10 and p["name"] == "10n-44m-SmallNet_10_2_36"]
 #problems[0]["demands"] = [problems[0]["demands"][0]]
 
 # Default Problems
@@ -52,7 +52,7 @@ problems = [ p for p in Loader.load() if len(p["graph"]) < 10 and p["name"] == "
 
 solvers = [
     # DR_BF_R <- Does not work, see doc or pdf,
-    #DR_BF_M,
+    DR_BF_M,
     #DR_BF_F,
     #DR_BF_C,
 
@@ -85,7 +85,7 @@ solvers = [
     #NLS_C,
 
     #DSL_BF_M,
-    #DSL_BF_C
+    #DSL_BF_C <- Not working atm
 ]
 print(problems)
 
@@ -93,5 +93,6 @@ solve.solve(
     solvers,
     problems=problems,
     export=True,
+    export_path = 'export',
     validate=True
 )

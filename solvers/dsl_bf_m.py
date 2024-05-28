@@ -22,6 +22,10 @@ class Solver():
 
         self._demands = demands
         self._S = S
+        self._hooks = []
+        
+    def register_hook(self, hook):
+        self._hooks.append(hook)
 
     def solve(self, export=False) -> list[tuple[T_graph, tuple[int, int]]]:
         m = Model(name=self._name)
@@ -113,18 +117,16 @@ class Solver():
                         sum([u[d, i, j, t, sl]/(demands[d][2]*len(demands[d][1]))
                              for d, i, j, t, sl in u]))
         
-        if export:
-            m.print_information()
-        
-        if export:
-            m.export_as_lp("{}.lp".format(name))
+        for h in self._hooks:
+            h.hook_before_solve(m)
 
         solution = m.solve()
+
+        for h in self._hooks:
+            h.hook_after_solve(m)
+
         if solution == None:
             raise AssertionError(f"Solution not found: {m.solve_details}")
-
-        if export:
-            solution.export("{}.json".format(name))
 
 
         res = to_res(

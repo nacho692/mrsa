@@ -1,4 +1,5 @@
 from graph import dfs
+from export_hook import ExportHook
 
 def validate_solution(graph, S, demands, solution):
     """
@@ -77,9 +78,12 @@ def solve(solvers: list, problems: list[dict], export = False, export_path = 'ex
             S = p["S"]
             ds = p["demands"]
             solver = s(g, S, ds, name=p["name"])
+            if export:
+                solver.register_hook(ExportHook(export_path))
+                
             print(f"problem: {solver._name}")
             try:
-                solution = solver.solve(export = export)
+                solution = solver.solve()
                 print(f"solution: {solution}")
                 if validate:
                     validate_solution(g, S, ds, solution)

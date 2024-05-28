@@ -43,7 +43,7 @@ from solvers.dsl_bf_m import Solver as DSL_BF_M
 from solvers.dsl_bf_c import Solver as DSL_BF_C
 
 # Generated Instances
-problems = [ p for p in Loader.load() if len(p["graph"]) <= 10 and p["name"] == "10n-44m-SmallNet_10_2_36"]
+problems = [ p for p in Loader.load() if len(p["graph"]) <= 19]
 #problems[0]["demands"] = [problems[0]["demands"][0]]
 
 # Default Problems
@@ -53,38 +53,38 @@ problems = [ p for p in Loader.load() if len(p["graph"]) <= 10 and p["name"] == 
 solvers = [
     # DR_BF_R <- Does not work, see doc or pdf,
     DR_BF_M,
-    #DR_BF_F,
-    #DR_BF_C,
+    DR_BF_F,
+    DR_BF_C,
 
-    #DR_OB_M,
-    #DR_OB_F,
-    #DR_OB_C,
+    DR_OB_M,
+    DR_OB_F,
+    DR_OB_C,
 
-    #DR_BSA_M,
-    #DR_BSA_F,
-    #DR_BSA_C,
+    DR_BSA_M,
+    DR_BSA_F,
+    DR_BSA_C,
 
-    #DR_SC_M,
-    #DR_SC_F,
-    #DR_SC_C,
+    DR_SC_M,
+    DR_SC_F,
+    DR_SC_C,
 
-    #DR_AOV_F,
-    #DR_AOV_M,
-    #DR_AOV_C,
+    DR_AOV_F,
+    DR_AOV_M,
+    DR_AOV_C,
 
-    #DS_BF_F,
-    #DS_BF_M,
-    #DS_BF_C,
+    DS_BF_F,
+    DS_BF_M,
+    DS_BF_C,
 
-    #DS_ACC_M,
-    #DS_ACC_F,
-    #DS_ACC_C,
+    DS_ACC_M,
+    DS_ACC_F,
+    DS_ACC_C,
 
-    #NLS_F,
-    #NLS_M,
-    #NLS_C,
+    NLS_F,
+    NLS_M,
+    NLS_C,
 
-    #DSL_BF_M,
+    DSL_BF_M,
     #DSL_BF_C <- Not working atm
 ]
 print(problems)

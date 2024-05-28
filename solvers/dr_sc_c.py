@@ -29,6 +29,10 @@ class Solver():
 
         self._demands = demands
         self._S = S
+        self._hooks = []
+        
+    def register_hook(self, hook):
+        self._hooks.append(hook)
 
     def solve(self, export=False):
         m = Model(name=self._name)
@@ -58,7 +62,6 @@ class Solver():
         cb._l = l
         cb._graph = graph
         cb._demands = demands
-        cb._export = export
 
         # demands have a left slot assignation
         for d in range(len(demands)):
@@ -74,18 +77,16 @@ class Solver():
 
         m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
         
-        if export:
-            m.print_information()
-        
-        if export:
-            m.export_as_lp("{}.lp".format(name))
+        for h in self._hooks:
+            h.hook_before_solve(m)
 
         solution = m.solve()
+
+        for h in self._hooks:
+            h.hook_after_solve(m)
+
         if solution == None:
             raise AssertionError(f"Solution not found: {m.solve_details}")
-
-        if export:
-            solution.export("{}.json".format(name))
 
         res = to_res(
             solution.get_value_dict(y), 

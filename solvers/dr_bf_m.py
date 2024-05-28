@@ -1,6 +1,6 @@
 from docplex.mp.model import Model
+
 import math
-import json
 
 """
 drbr_mr is a drbr constraints system that generates a specific path per pair (demand, terminal) and then joins them all together.
@@ -24,6 +24,10 @@ class Solver():
 
         self._demands = demands
         self._S = S
+        self._hooks = []
+    
+    def register_hook(self, hook):
+        self._hooks.append(hook)
 
     def solve(self, export=False, export_path='export'):
         m = Model(name=self._name)
@@ -100,26 +104,16 @@ class Solver():
 
         m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
         
-        if export:
-            m.print_information()
-        
-        if export:
-            m.export_as_lp(f"{export_path}/{name}.lp")
+        for h in self._hooks:
+            h.hook_before_solve(m)
 
-        solution = m.solve(log_output=True)
+        solution = m.solve()
 
-        if export and m.solve_details is not None:
-            json_export = m.solve_details.__dict__.copy()
-            json_export["constraints"] = m.number_of_constraints
-            json_export["name"] = name
-            with open(f"{export_path}/{name}_solution_details.json", "w") as f:
-                json.dump(json_export, f, sort_keys=True)
+        for h in self._hooks:
+            h.hook_after_solve(m)
 
         if solution == None:
             raise AssertionError(f"Solution not found: {m.solve_details}")
-
-        if export:
-            solution.export(f"{export_path}/{name}_solution.json")
 
         res = to_res(
             solution.get_value_dict(y), 

@@ -1,5 +1,7 @@
 from graph import dfs
 from export_hook import ExportHook
+from timeout_hook import TimeoutHook
+from datetime import timedelta
 
 def validate_solution(graph, S, demands, solution):
     """
@@ -80,6 +82,7 @@ def solve(solvers: list, problems: list[dict], export = False, export_path = 'ex
             solver = s(g, S, ds, name=p["name"])
             if export:
                 solver.register_hook(ExportHook(export_path))
+            solver.register_hook(TimeoutHook(timedelta(seconds=10)))
                 
             print(f"problem: {solver._name}")
             try:

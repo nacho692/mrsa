@@ -16,7 +16,7 @@ class Solver():
         self._graph = graph
 
         if name != "":
-            self._name = "{}: {}".format("dr_aov_m", name)
+            self._name = "{}:{}".format("dr_aov_m", name)
         else:
             self._name = "dr_aov_m"
 

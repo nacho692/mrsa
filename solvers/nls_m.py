@@ -22,7 +22,7 @@ class Solver():
         self._graph = graph
 
         if name != "":
-            self._name = "{}: {}".format("nls_m", name)
+            self._name = "{}:{}".format("nls_m", name)
         else:
             self._name = "nls_m"
 

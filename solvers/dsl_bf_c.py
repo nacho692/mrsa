@@ -23,7 +23,7 @@ class Solver():
         self._graph = graph
 
         if name != "":
-            self._name = "{}: {}".format("dsl_bf_c", name)
+            self._name = "{}:{}".format("dsl_bf_c", name)
         else:
             self._name = "dsl_bf_c"
 

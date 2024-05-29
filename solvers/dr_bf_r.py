@@ -18,7 +18,7 @@ class Solver():
         self._graph = graph
 
         if name != "":
-            self._name = "{}: {}".format("dr_bf_r", name)
+            self._name = "{}:{}".format("dr_bf_r", name)
         else:
             self._name = "dr_bf_r"
 

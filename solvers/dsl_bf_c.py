@@ -76,6 +76,16 @@ class Solver():
 
         for e in edges:
              m.add_constraint(sum([u[d,e[0],e[1],S] for d in range(len(demands))]) == 0, ctname="u_deS is 0 for all d,e")
+        
+        for d,e1,e2,s in [(d,e1,e2,s)
+                    for d in range(len(demands))
+                    for n in range(len(graph))
+                    for e1 in edges if e1[0] == n or e1[1] == n
+                    for e2 in edges if e2[1] == n or e2[1] == n and e1 != e2
+                    for s in range(S)]:
+            v = demands[d][2]
+            m.add_constraint(sum([u[d,e1[0],e1[1],s2] for s2 in range(S)]) <= v*(1-u[d,e2[0],e2[1],s]+u[d,e1[0],e1[1],s]), 
+                             ctname="node edges slots must match")
 
         for d, e, s in [(d, e, s)
                          for d in range(len(demands))
@@ -106,6 +116,7 @@ class Solver():
             h.hook_after_solve(m)
 
         if solution == None:
+            m.end()
             raise AssertionError(f"Solution not found: {m.solve_details}")
 
         res = to_res(
@@ -138,9 +149,13 @@ def to_res(u, n, demands, S) -> list[tuple[T_graph, tuple[int, int]]]:
             demand_graph = demand_graphs[d]
             if j not in demand_graph[i]:
                 demand_graph[i].append(j)
-
     res = []
     for i in range(len(demands)):
+        # we only return graphs reachable from source
+        reached = dfs(demand_graphs[i], demands[i][0])
+        for n, outgoing in enumerate(demand_graphs[i]):
+            if n not in reached:
+                outgoing.clear()
         res.append((demand_graphs[i], slot_assignations[i]))
     return res
 

@@ -2,7 +2,7 @@ from graph import dfs
 from hook_export import HookExport
 from hook_mip_info_callback import HookMIPInfoCallback
 from hook_timeout import HookTimeout
-from datetime import timedelta
+from datetime import timedelta,datetime
 
 def validate_solution(graph, S, demands, solution):
     """
@@ -75,26 +75,33 @@ def validate_solution(graph, S, demands, solution):
 
 def solve(solvers: list, problems: list[dict], export = False, export_path = 'export', validate = False):
     not_ok = []
+    total = len(solvers)*len(problems)
+    i = 1
     for s in solvers:
         for p in problems:
+            now = datetime.now()
+            print(f"{now}: setting up problem {i}/{total}")
+            i += 1
+
             g = p["graph"]
             S = p["S"]
             ds = p["demands"]
             solver = s(g, S, ds, name=p["name"])
 
             hook_cb = HookMIPInfoCallback()
-            
-            hook_to = HookTimeout(timedelta(seconds=10))
-            hook_cb.register_call(hook_to.call())
-
-            solver.register_hook(hook_to)
             solver.register_hook(hook_cb)
+            
+            hook_to = HookTimeout(timedelta(seconds=600))
+            hook_cb.register_call(hook_to.call())
+            solver.register_hook(hook_to)
+
             if export:
                 hook_ex = HookExport(export_path)
                 hook_cb.register_call(hook_ex.call())
                 solver.register_hook(hook_ex)
                 
             print(f"problem: {solver._name}")
+            print(p)
             try:
                 solution = solver.solve()
                 print(f"solution: {solution}")

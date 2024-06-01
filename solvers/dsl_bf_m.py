@@ -143,9 +143,9 @@ class Solver():
         #         v*(1 - u[d,e2[0],e2[1],t2,sl] + u[d,e[0],e[1],t,sl]),
         #         ctname="demand/terminal pair path use the same slots")
             
-        # m.set_objective("min", 
-        #                 sum([u[d, i, j, t, sl]/(demands[d][2]*len(demands[d][1]))
-        #                      for d, i, j, t, sl in u]))
+        m.set_objective("min",
+                        sum([u[d, i, j, t, sl]/(demands[d][2]*len(demands[d][1]))
+                             for d, i, j, t, sl in u]))
         
         for h in self._hooks:
             h.hook_before_solve(m)

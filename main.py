@@ -1,6 +1,9 @@
-from sample_problems.problems import problems as def_problems
+import resource
+
+resource.setrlimit(resource.RLIMIT_AS, (int(6 * 1024 * 1024 * 1024), int(6 * 1024 * 1024 * 1024)))
 
 import solve
+from sample_problems.problems import problems as def_problems
 from instances_loader import Loader
 
 from solvers.dr_bf_r import Solver as DR_BF_R
@@ -43,15 +46,15 @@ from solvers.dsl_bf_m import Solver as DSL_BF_M
 from solvers.dsl_bf_c import Solver as DSL_BF_C
 
 # Generated Instances
-problems = [ p for p in Loader.load() if len(p["graph"]) <= 19]
+#problems = [ p for p in Loader.load() if len(p["graph"]) < 20 and p["name"]=="19n-76m-EON19_25_3_63" ]
 #problems[0]["demands"] = [problems[0]["demands"][0]]
 
 # Default Problems
-#problems = [ p for p in def_problems]
+problems = [ p for p in def_problems ]
 
 
 solvers = [
-    # DR_BF_R <- Does not work, see doc or pdf,
+    ##DR_BF_R <- Does not work, see doc or pdf,
     DR_BF_M,
     DR_BF_F,
     DR_BF_C,
@@ -85,9 +88,8 @@ solvers = [
     NLS_C,
 
     DSL_BF_M,
-    #DSL_BF_C <- Not working atm
+    DSL_BF_C
 ]
-print(problems)
 
 solve.solve(
     solvers,

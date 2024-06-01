@@ -107,8 +107,7 @@ def solve(solvers: list, problems: list[dict], export = False, export_path = 'ex
                 print(f"solution: {solution}")
                 if validate:
                     validate_solution(g, S, ds, solution)
-
-            except AssertionError as ex:
+            except (MemoryError, AssertionError) as ex:
                 print(ex)
                 not_ok.append({
                     "name": solver._name,

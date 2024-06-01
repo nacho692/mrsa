@@ -28,8 +28,11 @@ class Solver():
     def register_hook(self, hook):
         self._hooks.append(hook)
 
-    def solve(self, export=False):
-        m = Model(name=self._name)
+    def solve(self) -> list[tuple[T_graph, tuple[int, int]]]:
+        with Model(name=self._name) as m:
+            return self._solve(m)
+
+    def _solve(self, m) -> list[tuple[T_graph, tuple[int, int]]]:
 
         demands = self._demands
         S = self._S
@@ -108,7 +111,7 @@ class Solver():
             h.hook_after_solve(m)
 
         if solution == None:
-            m.end()
+            
             raise AssertionError(f"Solution not found: {m.solve_details}")
 
         res = to_res(
@@ -116,7 +119,7 @@ class Solver():
             solution.get_value_dict(l), 
             len(graph), demands
             )
-        m.end()
+        
 
         return res
 
@@ -132,7 +135,7 @@ def to_res(y, l, n, demands) -> list[tuple[T_graph, tuple[int, int]]]:
     
     slot_assignations = [(int(0), int(0)) for _ in range(len(demands))]
     for d in l:
-        slot_assignations[d] = (math.ceil(l[d]), math.ceil(l[d]) + demands[d][2])
+        slot_assignations[d] = (math.trunc(l[d]), math.trunc(l[d]) + demands[d][2])
 
     res = []
     for i in range(len(demands)):

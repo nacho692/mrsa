@@ -104,8 +104,11 @@ class Solver():
             lsum = sum([u[d,e[0],e[1],s2] for s2 in range(0, v)])
             m.add_constraint(lsum >= v*(u[d,e[0],e[1],s] - u[d,e[0],e[1],s+1]),
                                   ctname=f"base slots are contiguous and demand satisfied from {0}, s {s}")
-            
-        m.set_objective("min", 1)
+
+        m.set_objective("min", sum([u[d,e[0],e[1],s]/demands[d][2]
+                                    for d in range(len(demands))
+                                    for e in edges
+                                    for s in range(S)]))
         
         for h in self._hooks:
             h.hook_before_solve(m)

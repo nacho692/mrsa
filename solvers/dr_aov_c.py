@@ -97,6 +97,7 @@ class Solver():
             h.hook_after_solve(m)
 
         if solution == None:
+            m.end()
             raise AssertionError(f"Solution not found: {m.solve_details}")
 
 

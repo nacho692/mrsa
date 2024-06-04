@@ -109,10 +109,12 @@ def solve(solvers: list, problems: list[dict], export = False, export_path = 'ex
                     validate_solution(g, S, ds, solution)
             except Exception as ex:
                 print(ex)
+                print()
                 not_ok.append({
                     "name": solver._name,
                     "error": ex,
                     })
+                
                 continue
             print("validation: OK")
             print()

@@ -77,7 +77,7 @@ class Solver():
         # demands do not overlap
         for d1, d2 in p:
             for i, j in edges:
-                m.add_constraint(demands[d1][2] + l[d1] <= l[d2] + S*(3-p[d1,d2] - y[d1,i,j] - y[d2, i, j]), ctname="avoid overlap between demands")     
+                m.add_constraint(demands[d1][2] + l[d1] <= l[d2] + S*(3-p[d1,d2] - y[d1,i,j] - y[d2,i,j]), ctname="avoid overlap between demands")
         
         m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
         

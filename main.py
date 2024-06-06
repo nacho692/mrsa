@@ -48,7 +48,7 @@ from solvers.dsl_ascc_c import Solver as DSL_ASCC_C
 from solvers.dsl_asb_c import Solver as DSL_ASB_C
 
 from solvers.drl_bf_m import Solver as DRL_BF_M
-
+from solvers.drl_bf_c import Solver as DRL_BF_C
 
 # Generated Instances
 problems = [ p for p in Loader.load() if len(p["graph"]) > 10 and len(p["graph"]) <= 20 ]
@@ -97,7 +97,8 @@ solvers = [
     # DSL_ASCC_C,
     # DSL_ASB_C,
 
-    DRL_BF_M
+    # DRL_BF_M
+    DRL_BF_C
 ]
 
 solve.solve(

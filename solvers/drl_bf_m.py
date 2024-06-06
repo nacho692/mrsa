@@ -45,17 +45,17 @@ class Solver():
             for v in outgoing:
                 edges.append((u, v))
 
-        l_S = {}
+        S_L = {}
         for d in range(len(demands)):
             v = demands[d][2]
-            l_S[d] = S - v
+            S_L[d] = S - v
 
         # U_dets variables
         l = m.binary_var_dict(keys=[(d, i, j, t, s)
                                     for d in range(len(demands))
                                     for i, j in edges
                                     for t in demands[d][1]
-                                    for s in range(0, l_S[d] + 1)], name="l")
+                                    for s in range(0, S_L[d] + 1)], name="l")
         # flow constraints
         for d, t in [(d, t)
                      for d in range(len(demands))
@@ -67,13 +67,13 @@ class Solver():
             m.add_constraint(sum([
                 l[d, e[0], e[1], t, sl]
                 for e in edges if e[0] == s
-                for sl in range(l_S[d] + 1)
+                for sl in range(S_L[d] + 1)
             ]) == 1, ctname="one outgoing from source")
 
             m.add_constraint(sum([
                 l[d, e[0], e[1], t, sl]
                 for e in edges if e[1] == s
-                for sl in range(l_S[d] + 1)
+                for sl in range(S_L[d] + 1)
             ]) == 0, ctname="none incoming to source")
 
         for d, j, t, sl in [
@@ -81,7 +81,7 @@ class Solver():
             for d in range(len(demands))
             for t in demands[d][1]
             for j in range(len(graph)) if j != demands[d][0] and j != t
-            for sl in range(l_S[d] + 1)
+            for sl in range(S_L[d] + 1)
         ]:
             incoming_sum = sum([
                 l[d, e[0], e[1], t, sl]
@@ -103,9 +103,9 @@ class Solver():
             for e2 in edges if demands[d][0] == e2[0]
             for t1 in demands[d][1]
             for t2 in demands[d][1] if t1 != t2
-            for sl in range(l_S[d] + 1)
+            for sl in range(S_L[d] + 1)
         ]:
-            lsum = sum([l[d, e1[0], e1[1], t1, sl2] for sl2 in range(l_S[d] + 1)])
+            lsum = sum([l[d, e1[0], e1[1], t1, sl2] for sl2 in range(S_L[d] + 1)])
             m.add_constraint(lsum <= 1 - (l[d, e2[0], e2[1], t2, sl] - l[d, e1[0],
                              e1[1], t1, sl]), ctname="paths with same demands use the same slots")
 
@@ -114,7 +114,7 @@ class Solver():
             for d in range(len(demands))
             for e in edges
             for t in demands[d][1]
-            for sl in range(l_S[d] + 1)
+            for sl in range(S_L[d] + 1)
         ]:
             i, j = e[0], e[1]
             v = demands[d][2]
@@ -122,7 +122,7 @@ class Solver():
                 l[d2, i, j, t2, sl2]
                 for d2 in range(len(demands)) if d != d2
                 for t2 in demands[d2][1]
-                for sl2 in range(sl, min(l_S[d2] + 1, sl+v))
+                for sl2 in range(sl, min(S_L[d2] + 1, sl+v))
             ])
             m.add_constraint(
                 lsum <= S*(1-l[d, i, j, t, sl]), ctname="avoid overlap")
@@ -145,8 +145,7 @@ class Solver():
         res = to_res(
             graph,
             solution.get_value_dict(l),
-            demands,
-            S)
+            demands)
 
         return res
 
@@ -154,7 +153,7 @@ class Solver():
         return self._name
 
 
-def to_res(graph, l, demands, S) -> list[tuple[T_graph, tuple[int, int]]]:
+def to_res(graph, l, demands) -> list[tuple[T_graph, tuple[int, int]]]:
     n = len(graph)
     demand_graphs = [[[] for _ in range(n)] for _ in range(len(demands))]
     slot_assignations = [(int(0), int(0)) for _ in range(len(demands))]

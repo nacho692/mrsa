@@ -60,14 +60,18 @@ class Loader:
         # S, |D|, ignore |D|
         S, _ = line.split()
 
-        for line in file:
-            source, terminal, slots = line.split()
-            if source not in d:
-                d[source] = [[], 0]
-            d[source][0].append(int(terminal))
-            d[source][1] = int(slots)
         demands = []
-        for k, v in d.items():
-            demands.append((int(k), set(v[0]), v[1]))
+        for line in file:
+            demand_line = line.split()
+            source = int(demand_line[0])
+            nT = int(demand_line[1])
+            base = 2
+            slots = int(demand_line[base + nT])
+
+            terminals = []
+            for i in range(2, 2 + nT):
+                terminals.append(int(demand_line[i]))
+
+            demands.append((int(source), set(terminals), slots))
 
         return demands, int(S)

@@ -91,7 +91,7 @@ def solve(solvers: list, problems: list[dict], export = False, export_path = 'ex
             hook_cb = HookMIPInfoCallback()
             solver.register_hook(hook_cb)
             
-            hook_to = HookTimeout(timedelta(seconds=60))
+            hook_to = HookTimeout(timedelta(seconds=600))
             hook_cb.register_call(hook_to.call())
             solver.register_hook(hook_to)
 

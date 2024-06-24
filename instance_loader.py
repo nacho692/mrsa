@@ -1,5 +1,4 @@
 import os
-import collections
 
 T_graph = list[list[int]]
 T_demand = tuple[int, set[int], int]
@@ -8,31 +7,29 @@ T_demand = tuple[int, set[int], int]
 class Loader:
     @staticmethod
     def load(topologies_path="../RSAinstances/topologies",
-             instances_path="../RSAinstances/instances",
-             ) -> list[dict]:
-
-        problems = []
-
+             instance="",
+             ) -> dict:
+        
+        if instance == "":
+            raise ValueError("Instance file must be provided")
+        
         graphs = {}
         for root, _, files in os.walk(topologies_path):
             for f in files:
                 with open(f"{root}/{f}", 'r') as file:
                     graphs[f.replace(".txt", "")] = Loader.to_graph(file)
 
-        for root, _, files in os.walk(instances_path):
-            for f in files:
-                with open(f"{root}/{f}", 'r') as file:
-                    graph_name = f.split("_")[1]
-                    problem_name = f.replace("instance_", "").replace(".txt", "")
-                    demands, S = Loader.to_demands(file)
-                    problems.append({
-                        "name": problem_name,
-                        "graph": graphs[graph_name],
-                        "S": S,
-                        "demands": demands,
-                    })
-
-        return problems
+        with open(f"{instance}", 'r') as file:
+            name = os.path.basename(instance)
+            graph_name = name.split("_")[1]
+            problem_name = name.replace("instance_", "").replace(".txt", "")
+            demands, S = Loader.to_demands(file)
+            return {
+                "name": problem_name,
+                "graph": graphs[graph_name],
+                "S": S,
+                "demands": demands,
+            }
 
     @staticmethod
     def to_graph(file) -> T_graph:

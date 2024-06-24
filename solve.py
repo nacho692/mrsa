@@ -73,50 +73,35 @@ def validate_solution(graph, S, demands, solution):
             if t not in reached:
                 raise AssertionError(f"cannot reach node {t} in demand solution {d}")
 
-def solve(solvers: list, problems: list[dict], export = False, export_path = 'export', validate = False):
-    not_ok = []
-    total = len(solvers)*len(problems)
-    i = 1
-    for s in solvers:
-        for p in problems:
-            now = datetime.now()
-            print(f"{now}: setting up problem {i}/{total}")
-            i += 1
+def solve(s: any, p: dict, export = False, export_path = "", validate = False, timeout_seconds = None):
 
-            g = p["graph"]
-            S = p["S"]
-            ds = p["demands"]
-            solver = s(g, S, ds, name=p["name"])
+    g = p["graph"]
+    S = p["S"]
+    ds = p["demands"]
+    solver = s(g, S, ds, name=p["name"])
 
-            hook_cb = HookMIPInfoCallback()
-            solver.register_hook(hook_cb)
-            
-            hook_to = HookTimeout(timedelta(seconds=600))
-            hook_cb.register_call(hook_to.call())
-            solver.register_hook(hook_to)
+    hook_cb = HookMIPInfoCallback()
+    solver.register_hook(hook_cb)
+    
+    if timeout_seconds is not None:
+        hook_to = HookTimeout(timedelta(seconds=timeout_seconds))
+        hook_cb.register_call(hook_to.call())
+        solver.register_hook(hook_to)
 
-            if export:
-                hook_ex = HookExport(export_path)
-                hook_cb.register_call(hook_ex.call())
-                solver.register_hook(hook_ex)
-                
-            print(f"problem: {solver._name}")
-            print(p)
-            try:
-                solution = solver.solve()
-                print(f"solution: {solution}")
-                if validate:
-                    validate_solution(g, S, ds, solution)
-            except Exception as ex:
-                print(f"{ex.__class__}:{str(ex)}")
-                print()
-                not_ok.append({
-                    "name": solver._name,
-                    "error": ex,
-                    })
-                
-                continue
-            print("validation: OK")
-            print()
-    for e in not_ok:
-        print(e)
+    if export:
+        hook_ex = HookExport(export_path)
+        hook_cb.register_call(hook_ex.call())
+        solver.register_hook(hook_ex)
+        
+    print(f"problem: {solver._name}")
+    print(p)
+    try:
+        solution = solver.solve()
+        print(f"solution: {solution}")
+        if validate:
+            validate_solution(g, S, ds, solution)
+    except Exception as ex:
+        print({
+            "name": solver._name,
+            "error": f"{ex.__class__}:{str(ex)}",
+            })

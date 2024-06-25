@@ -19,3 +19,6 @@ class HookTimeout:
 
     def hook_after_solve(self, m):
         pass
+    
+    def hook_on_exception(self, e: Exception, m):
+        pass

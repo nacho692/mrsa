@@ -28,8 +28,13 @@ class Solver():
         self._hooks.append(hook)
 
     def solve(self) -> list[tuple[T_graph, tuple[int, int]]]:
-        with Model(name=self._name) as m:
-            return self._solve(m)
+        try:
+            with Model(name=self._name) as m:
+                return self._solve(m)
+        except Exception as e:
+            for h in self._hooks:
+                h.hook_on_exception(e, m)
+            raise e
 
     def _solve(self, m) -> list[tuple[T_graph, tuple[int, int]]]:
 

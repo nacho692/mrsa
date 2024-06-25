@@ -34,8 +34,13 @@ class Solver():
         self._hooks.append(hook)
 
     def solve(self) -> list[tuple[T_graph, tuple[int, int]]]:
-        with Model(name=self._name) as m:
-            return self._solve(m)
+        try:
+            with Model(name=self._name) as m:
+                return self._solve(m)
+        except Exception as e:
+            for h in self._hooks:
+                h.hook_on_exception(e, m)
+            raise e
 
     def _solve(self, m: Model) -> list[tuple[T_graph, tuple[int, int]]]:
 
@@ -166,15 +171,14 @@ def filter_graph(graph, l, d_filter, S_L) -> T_graph:
 
 class DOLazyCallback(ConstraintCallbackMixin, LazyConstraintCallback):
 
-    _graph: list[list[int]]
-    _name: str
-    _S: int
-    _S_L: dict[int, int]
-    _demands: list[tuple[int, set[int], int]]
-    _l: dict
-    _export: bool = False
-
     def __init__(self, env):
+        self._graph: list[list[int]]
+        self._name: str
+        self._S: int
+        self._S_L: dict[int, int]
+        self._demands: list[tuple[int, set[int], int]]
+        self._l: dict
+        self._export: bool = False
         LazyConstraintCallback.__init__(self, env)
         ConstraintCallbackMixin.__init__(self)
 

@@ -19,14 +19,18 @@ class HookExport:
 
     def hook_before_solve(self, m):
         m.print_information()
-        m.export_as_lp(f"{self.path}/{m.name}.lp")
+       # m.export_as_lp(f"{self.path}/{m.name}.lp")
 
     def hook_after_solve(self, m: Model):
+        self._export(None, m)
+
+    def hook_on_exception(self, e: Exception, m: Model):
+        self._export(e, m)
+
+    def _export(self, e: Exception | None, m: Model):
+        json_export = {}
         if m.solve_details is not None:
             json_export = m.solve_details.__dict__.copy()
-            json_export["constraints"] = m.number_of_constraints
-            json_export["name"] = m.name
-            json_export["linear_relaxation"] = self.linear_relaxation
 
             if m.solution is not None:
                 for k, v in m.solution.get_cuts().items():
@@ -34,7 +38,15 @@ class HookExport:
             
                 json_export["objective_value"] = m.solution.objective_value
 
-            with open(f"{self.path}/{m.name}_solution_details.json", "w") as f:
-                json.dump(json_export, f, sort_keys=True)
+        json_export["constraints"] = m.number_of_constraints
+        json_export["name"] = m.name
+        json_export["linear_relaxation"] = self.linear_relaxation
+
+        if e is not None:
+            json_export["exception"] = f"{e.__class__}:{str(e)}"
+
+        with open(f"{self.path}/{m.name}_solution_details.json", "w") as f:
+            json.dump(json_export, f, sort_keys=True)
+
         if m.solution is not None:
             m.solution.export(f"{self.path}/{m.name}_solution.json")

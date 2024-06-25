@@ -2,7 +2,7 @@ import json
 import os
 import csv
 
-path = "export"
+path = "export_original"
 
 def subdirs(path: str):
     for entry in os.scandir(path):

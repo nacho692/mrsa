@@ -81,7 +81,12 @@ class Solver():
                     if u == i and v == j and d2 == d:
                         yps.append(yp[d2, t, u, v])
                 m.add_constraint(y[d,i,j]*len(T) >= sum(yps), ctname="if one yp is set, y must be set")
-                
+
+
+        # l_d <= S - v(d) - 1
+        for d in range(len(demands)):
+            m.add_constraint(l[d] <= S - demands[d][2] - 1)
+
         # slot constraints
         for d1, d2 in p:
             if d1 > d2:

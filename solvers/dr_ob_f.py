@@ -52,7 +52,7 @@ class Solver():
         p = m.binary_var_dict(keys=[(d, d2) for d2 in range(len(demands)) for d in range(len(demands)) if d != d2], name="p")
 
         # l_d variables (left slot allocation), if l_d = 200 then freq allocation for d starts at 200
-        l = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, ub=S-1, name="l")
+        l = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, name="l")
 
         # flow constraints
         for d, _ in enumerate(demands):
@@ -79,6 +79,10 @@ class Solver():
                     m.add_constraint(sum(inputs) - sum(outputs) == 1, ctname=f"terminal {j} input - output equals 1")
                 else:
                     m.add_constraint(sum(inputs) - sum(outputs) == 0, ctname=f"node {j} input - output equals 0")
+
+        # l_d <= S - v(d) - 1
+        for d in range(len(demands)):
+            m.add_constraint(l[d] <= S - demands[d][2] - 1)
 
         for d, i, j in f:
             m.add_constraint(y[d,i,j]*len(demands[d][1]) >= f[d,i,j], ctname="if f_e is set, y_e must be set")

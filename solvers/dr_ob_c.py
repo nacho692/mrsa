@@ -45,11 +45,10 @@ class Solver():
                 edges.append((u, v))
         y = m.binary_var_dict(keys=[(d, i, j) for d in range(len(demands)) for i, j in edges], name="y")
 
-        # p_dd' variables, p_dd' = 1 means that r_d < l_d'
         p = m.binary_var_dict(keys=[(d, d2) for d2 in range(len(demands)) for d in range(len(demands)) if d != d2], name="p")
 
         # l_d variables (left slot allocation), if l_d = 200 then freq allocation for d starts at 200
-        l = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, ub=S-1, name="l")
+        l = m.integer_var_dict(keys=[d for d in range(len(demands))], lb=0, name="l")
 
         # cut based constraints
         for di, d in enumerate(demands):
@@ -61,6 +60,10 @@ class Solver():
         cb._l = l
         cb._graph = graph
         cb._demands = demands
+
+        # l_d <= S - v(d) - 1
+        for d in range(len(demands)):
+            m.add_constraint(l[d] <= S - demands[d][2] - 1)
 
         # slot constraints
         for d1, d2 in p:

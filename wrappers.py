@@ -1,3 +1,4 @@
+from ast import Raise
 from typing import Callable
 from docplex.mp.model import Model
 from cplex.callbacks import MIPInfoCallback
@@ -5,12 +6,12 @@ import json
 from datetime import datetime, timedelta
 from typing import Callable
 from cplex.callbacks import MIPInfoCallback
-import functools
-import multiprocessing.pool
 from cplex.callbacks import MIPInfoCallback
 from typing import Callable,List
-from solvers.solvers import BaseHook
-
+from multiprocessing import Process, Manager
+from cplex import Aborter
+from solvers.solvers import Res
+import time
 
 class Export:
     @staticmethod
@@ -67,7 +68,7 @@ class Timeout:
     def __init__(self, timeout: timedelta):
         self.timeout = timeout
 
-    def hook_before_solve(self, m):
+    def hook_before_solve(self, m: Model):
         m.set_time_limit(self.timeout.seconds)
         return
 

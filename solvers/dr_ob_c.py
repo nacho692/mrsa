@@ -2,7 +2,6 @@ from docplex.mp.model import Model
 from cplex.callbacks import LazyConstraintCallback
 from docplex.mp.callbacks.cb_mixin import *
 from graph import dfs
-import math
 from solvers.solvers import BaseHook, T_graph, Res, solve_hook
 
 """
@@ -103,7 +102,7 @@ def to_res(y, l, n, demands) -> list[tuple[T_graph, tuple[int, int]]]:
     
     slot_assignations = [(int(0), int(0)) for _ in range(len(demands))]
     for d in l:
-        slot_assignations[d] = (math.trunc(l[d]), math.trunc(l[d]) + demands[d][2])
+        slot_assignations[d] = (round(l[d]), round(l[d]) + demands[d][2])
 
     res = []
     for i in range(len(demands)):

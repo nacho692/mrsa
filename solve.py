@@ -1,5 +1,6 @@
 from unittest.mock import Base
 
+from cplex import Aborter
 from docplex.mp.model import Model
 from graph import dfs
 from solvers.solvers import BaseHook

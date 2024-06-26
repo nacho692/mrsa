@@ -1,11 +1,11 @@
 import os
 import datetime
 import signal
-
+import pandas as pd
 
 instances_folder = "../MRSAinstances/instances"
 topologies_folder = "../MRSAinstances/topologies"
-export_folder = "test"
+export_folder = "export"
 
 # Get a list of all instance files in the instances folder recursively
 instance_files = []
@@ -17,18 +17,27 @@ solvers = ["DR_BF_M", "DR_BF_F", "DR_BF_C", "DR_OB_M", "DR_OB_F", "DR_OB_C", "DR
 
 total = len(instance_files)*len(solvers)
 i = 1
+
+# Group selection
+group = 1
+instances = pd.read_csv("experimentation/instances.csv")
+
 # Iterate over each instance file
 for instance_file in instance_files:
-
     file_name = os.path.basename(instance_file)
+    
+    instance_name = file_name.replace('instance_','').replace('.txt','')
+    if instances[(instances["instance"] == instance_name) & (instances["group"] == group)].size == 0:
+        continue
 
     for solver in solvers:
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"{timestamp} - Processing {i}/{total}")
         i+=1
-        instance_name = f"{solver.lower()}:{file_name.replace('instance_','').replace('.txt','')}"
 
-        if f"{instance_name}_solution_details.json" in os.listdir(export_folder):
+        execution_name = f"{solver.lower()}:{instance_name}"
+
+        if f"{execution_name}_solution_details.json" in os.listdir(export_folder):
             print(f"Skipping {file_name} as it already exists in the export folder")
             continue
         print(f"Running instance loader for {file_name} with solver {solver}")
@@ -39,7 +48,7 @@ for instance_file in instance_files:
             "-e", export_folder,
             "-v", "True",
             "-m", solver,
-            "-to", "60"]
+            "-to", "600"]
         os.system(f"python instance_solver.py {' '.join(solver_arguments)}")
         print()
 

@@ -3,6 +3,7 @@ from cplex.callbacks import LazyConstraintCallback
 from docplex.mp.callbacks.cb_mixin import *
 from graph import dfs
 import math
+from solvers.solvers import BaseHook, T_graph, Res, solve_hook
 
 """
 dsl_bf_c is a single family variable constraints system which adds a cut based approach to guarantee the demands arborescense.
@@ -10,10 +11,7 @@ dsl_bf_c is a single family variable constraints system which adds a cut based a
 For each demand, every subgraph that constains the source node and does not contain a terminal, must have at least one ougoing edge.
 """
 
-T_graph = list[list[int]]
-
 class Solver():
-
     
     def __init__(self, graph: T_graph, S: int, demands: list[tuple[int, set[int], int]], name: str = "") -> None:
         self._graph = graph
@@ -25,21 +23,17 @@ class Solver():
 
         self._demands = demands
         self._S = S
-        self._hooks = []
-        
-    def register_hook(self, hook):
-        self._hooks.append(hook)
+        self._hook: BaseHook
+
+    def register_hook(self, hook: BaseHook):
+        self._hook = hook
 
     def solve(self) -> list[tuple[T_graph, tuple[int, int]]]:
-        try:
-            with Model(name=self._name) as m:
-                return self._solve(m)
-        except Exception as e:
-            for h in self._hooks:
-                h.hook_on_exception(e, m)
-            raise e
+        with Model(name=self._name) as m:
+            return self._solve(m)
 
-    def _solve(self, m) -> list[tuple[T_graph, tuple[int, int]]]:
+    @solve_hook
+    def _solve(self, m: Model) -> Res:
 
         demands = self._demands
         S = self._S
@@ -114,13 +108,8 @@ class Solver():
                                     for e in edges
                                     for s in range(S)]))
         
-        for h in self._hooks:
-            h.hook_before_solve(m)
-
+        self._hook.hook_before_solve(m)
         solution = m.solve()
-
-        for h in self._hooks:
-            h.hook_after_solve(m)
 
         if solution == None:
             

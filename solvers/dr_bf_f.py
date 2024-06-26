@@ -1,5 +1,6 @@
 from docplex.mp.model import Model
 import math
+from solvers.solvers import BaseHook, T_graph, Res, solve_hook
 
 """
 dr_bf_f is a drbr constraints system that uses integer variables to mantain flow constraints.
@@ -23,21 +24,17 @@ class Solver():
 
         self._demands = demands
         self._S = S
-        self._hooks = []
-        
-    def register_hook(self, hook):
-        self._hooks.append(hook)
+        self._hook: BaseHook
+
+    def register_hook(self, hook: BaseHook):
+        self._hook = hook
 
     def solve(self) -> list[tuple[T_graph, tuple[int, int]]]:
-        try:
-            with Model(name=self._name) as m:
-                return self._solve(m)
-        except Exception as e:
-            for h in self._hooks:
-                h.hook_on_exception(e, m)
-            raise e
+        with Model(name=self._name) as m:
+            return self._solve(m)
 
-    def _solve(self, m) -> list[tuple[T_graph, tuple[int, int]]]:
+    @solve_hook
+    def _solve(self, m: Model) -> Res:
 
         demands = self._demands
         S = self._S
@@ -113,13 +110,8 @@ class Solver():
 
         m.set_objective("min", sum([y[d, u, v] for d, u, v in y]))
         
-        for h in self._hooks:
-            h.hook_before_solve(m)
-
+        self._hook.hook_before_solve(m)
         solution = m.solve()
-
-        for h in self._hooks:
-            h.hook_after_solve(m)
 
         if solution == None:
             

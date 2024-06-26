@@ -102,12 +102,13 @@ if __name__ == "__main__":
                     {','.join(models_dict.keys())}", default="dr_bf_m")
     parser.add_argument("-t", "--topology", type=str, help="The topologies "
                         "directory, there must be at least one compatible "
-                        "topology with the instance file, if empty, synthetic "
-                        "problem list will be ran")
+                        "topology with the instance file")
     parser.add_argument("-i", "--instance", type=str, help="The instance file, "
                         "must be compatible with the topology")
     parser.add_argument("-e", "--export", type=str, help="Indicates the export "
                         "path, if empty there will be no export", default="export")
+    parser.add_argument("-te", "--test", type=bool, help="Runs all solvers with default simple problems", 
+                        default=False)
     parser.add_argument("-v", "--validate", type=bool, help="Indicates if the "
                         "solution should be validated", default=True)
     parser.add_argument("-to", "--timeout", type=int, help="Indicates the timeout "
@@ -115,24 +116,24 @@ if __name__ == "__main__":
                         default=60)
     args = parser.parse_args()
 
+    export = args.export != ""
+    if args.test:
+        # Running default problems
+        for p in def_problems:
+            for s in solvers:
+                solve.solve(
+                    s,
+                    p,
+                    export=export,
+                    export_path = args.export,
+                    validate=args.validate,
+                )
+        sys.exit()
+
     model = args.model.lower()
     if model not in models_dict.keys():
         print(f"Model {model} not found")
         sys.exit()
-        
-    export = args.export != ""
-    if args.topology is None:
-        # Running default problems
-        for p in def_problems:
-            solve.solve(
-                models_dict[model],
-                p,
-                export=export,
-                export_path = args.export,
-                validate=args.validate,
-            )
-        sys.exit()
-
     if args.instance is None:
         print("If topology is set, instance file must be provided")
         sys.exit()

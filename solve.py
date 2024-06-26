@@ -1,8 +1,12 @@
+from unittest.mock import Base
+
+from docplex.mp.model import Model
 from graph import dfs
-from hook_export import HookExport
-from hook_mip_info_callback import HookMIPInfoCallback
-from hook_timeout import HookTimeout
+from solvers.solvers import BaseHook
+from wrappers import Export, Timeout, HookMIPInfoCallback
 from datetime import timedelta,datetime
+from typing import Any, Callable
+from solvers.solvers import Res
 
 def validate_solution(graph, S, demands, solution):
     """
@@ -73,35 +77,73 @@ def validate_solution(graph, S, demands, solution):
             if t not in reached:
                 raise AssertionError(f"cannot reach node {t} in demand solution {d}")
 
-def solve(s: any, p: dict, export = False, export_path = "", validate = False, timeout_seconds = None):
+class Hook(BaseHook):
+    def __init__(self, export, export_path, timeout_seconds):
+        BaseHook.__init__(self)
+        self._before_solve = []
+        self._export = export
+        self._export_path = export_path
+        self._timeout_seconds = timeout_seconds
+        self._wrap: Callable[[Model, Callable[[], Res]], Res] = lambda _, f: f()
+
+
+        hook_cb = HookMIPInfoCallback()
+        self.register_hook_before_solve(hook_cb.hook_before_solve)
+
+        if self._timeout_seconds is not None:
+            hook_to = Timeout(timedelta(seconds=timeout_seconds))
+            self.register_hook_before_solve(hook_to.hook_before_solve)
+
+        if export:
+            hook_ex = Export(export_path)
+            hook_cb.register_call(hook_ex.call())
+            self.register_hook_before_solve(hook_ex.print_information)
+
+            def _export_wrap(m: Model, f: Callable[[], Res]):
+                try:
+                    res = f()
+                except Exception as e:
+                    hook_ex.export(e, m)
+                    hook_ex.print_solution_information(m)
+                    raise e
+                hook_ex.export(None, m)
+                hook_ex.print_solution_information(m)
+                return res
+            
+            self.register_wrap(_export_wrap)
+
+    def register_hook_before_solve(self, f: Callable[[Model], None]):
+        self._before_solve.append(f)
+
+    def hook_before_solve(self, m: Model):
+        for f in self._before_solve:
+            f(m)
+
+    def register_wrap(self, func: Callable[[Model, Callable[[], Res]], Res]):
+        old_wrap = self._wrap
+        def new_wrap(m: Model, f: Callable[[], Res]):
+            return func(m, lambda: old_wrap(m, f))
+            
+        self._wrap = new_wrap
+
+    def wrap_solve(self, m: Model, func: Callable[[], Res]):
+        return self._wrap(m, func)
+
+def solve(s: Any, p: dict, export = False, export_path = "", validate = False, timeout_seconds = None):
 
     g = p["graph"]
     S = p["S"]
     ds = p["demands"]
     solver = s(g, S, ds, name=p["name"])
 
-    hook_cb = HookMIPInfoCallback()
-    solver.register_hook(hook_cb)
-    
-    if timeout_seconds is not None:
-        hook_to = HookTimeout(timedelta(seconds=timeout_seconds))
-        hook_cb.register_call(hook_to.call())
-        solver.register_hook(hook_to)
+    hook = Hook(export, export_path, timeout_seconds)
+    solver.register_hook(hook)
 
-    if export:
-        hook_ex = HookExport(export_path)
-        hook_cb.register_call(hook_ex.call())
-        solver.register_hook(hook_ex)
-        
     print(f"problem: {solver._name}")
-    print(p)
     try:
         solution = solver.solve()
-        print(f"solution: {solution}")
         if validate:
             validate_solution(g, S, ds, solution)
+            print("Validation: Ok")
     except Exception as ex:
-        print({
-            "name": solver._name,
-            "error": f"{ex.__class__}:{str(ex)}",
-            })
+        print(f"error:{ex.__class__}={str(ex)}")

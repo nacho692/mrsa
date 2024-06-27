@@ -1,8 +1,10 @@
 import json
 import os
 import csv
+from pydoc import writedoc
 
-path = "export_original"
+path = "group_1"
+output_path = "experimentation/group_1.csv"
 
 def subdirs(path: str):
     for entry in os.scandir(path):
@@ -21,7 +23,8 @@ def json_compiler(path: str):
     
     for f in solution_details_files(path):
         with open(path + f, "r") as jsonf:
-            details.append(json.load(jsonf))
+            a = json.load(jsonf)
+            details.append(a)
     return details
 
 def solution_details_to_csv(path: str):
@@ -30,9 +33,16 @@ def solution_details_to_csv(path: str):
     if len(jsons) == 0:
         return
     
-    with open("experimentation/data.csv", "w", newline="") as output_file:
-        writer = csv.DictWriter(output_file, jsons[0].keys())
+    # Get all unique keys from the jsons
+    keys = set().union(*(d.keys() for d in jsons))
+
+    # Create a list of dictionaries with all keys present in each dictionary
+    complete_jsons = [{key: d.get(key) for key in keys} for d in jsons]
+
+    with open(output_path, "w", newline="") as output_file:
+        # Write the complete_jsons to the CSV file
+        writer = csv.DictWriter(output_file, complete_jsons[0].keys())
         writer.writeheader()
-        writer.writerows(jsons)
+        writer.writerows(complete_jsons)
 
 solution_details_to_csv(path)

@@ -1,17 +1,26 @@
 import os
 import csv
 
-def group_selector(row):
-    # Group 1
+directory = '../MRSAinstances/instances'
+csv_file = 'experimentation/instances.csv'
+
+def is_group_1(row):
     topology = row["topology"]
     slots = row["slots"]
-    if topology == "EuroLarge" and slots in ["10"]:
-        return 1
-    if topology == "SpanishTelefonica" and slots in ["10", "30"]:
-        return 1
-    if topology == "PanEuropeanCOST239" and slots in ["10", "30"]:
-        return 1
+    spread = row["spread"]
+    if topology == "EuroLarge" and slots in [10, 30] and abs(spread - 0.2) < 0.001:
+        return True
+    if topology == "SpanishTelefonica" and slots in [10, 30] and abs(spread - 0.2) < 0.001:
+        return True
+    if topology == "PanEuropeanCOST239" and (abs(spread - 0.2) < 0.001 or abs(spread - 0.5) < 0.001):
+        return True
     if topology in ["n6s9"]:
+        return True
+    return False
+
+def group_selector(row):
+    # Group 1
+    if is_group_1(row):
         return 1
     return 0
 
@@ -46,10 +55,6 @@ def get_file_names(directory):
             file_names.append(file)
     return file_names
 
-
-
-directory = '../MRSAinstances/instances'
-csv_file = 'experimentation/instances.csv'
 
 file_names = get_file_names(directory)
 output = []

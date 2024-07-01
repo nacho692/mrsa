@@ -3,10 +3,30 @@ import datetime
 import signal
 import pandas as pd
 
+
+group_config = [
+    {
+        "name": "group_1",
+        "solvers": ["DR_BF_M", "DR_BF_F", "DR_BF_C", "DR_OB_M", "DR_OB_F", "DR_OB_C", "DR_BSA_M", "DR_BSA_F", "DR_BSA_C", "DR_SC_M", "DR_SC_F", "DR_SC_C", "DR_AOV_F", "DR_AOV_M", "DR_AOV_C", "DS_BF_F", "DS_BF_M", "DS_BF_C", "DS_ACC_M", "DS_ACC_F", "DS_ACC_C", "NLS_F", "NLS_M", "NLS_C", "DSL_BF_M", "DSL_BF_C", "DSL_ASCC_C", "DSL_ASB_C", "DRL_BF_M", "DRL_BF_C"],
+        "export_folder": "group_1",
+        "timeout": "60",
+    },
+    {
+        "name": "group_2",
+        "solvers": ["DR_AOV_M", "DR_BF_M", "DR_OB_M", "DR_AOV_F", "DR_BF_F", "DR_OB_F"],
+        "export_folder": "group_2",
+        "timeout": "600",
+    },
+]
+
+group = 1
+
 instances_folder = "../MRSAinstances/instances"
 topologies_folder = "../MRSAinstances/topologies"
-export_folder = "export"
-group = 1
+
+export_folder = group_config[group-1]["export_folder"]
+timeout = group_config[group-1]["timeout"]
+solvers = group_config[group-1]["solvers"]
 
 # Get a list of all instance files in the instances folder recursively
 instance_files = []
@@ -14,11 +34,9 @@ for root, dirs, files in os.walk(instances_folder):
     for file in files:
         instance_files.append(os.path.join(root, file))
 
-solvers = ["DR_BF_M", "DR_BF_F", "DR_BF_C", "DR_OB_M", "DR_OB_F", "DR_OB_C", "DR_BSA_M", "DR_BSA_F", "DR_BSA_C", "DR_SC_M", "DR_SC_F", "DR_SC_C", "DR_AOV_F", "DR_AOV_M", "DR_AOV_C", "DS_BF_F", "DS_BF_M", "DS_BF_C", "DS_ACC_M", "DS_ACC_F", "DS_ACC_C", "NLS_F", "NLS_M", "NLS_C", "DSL_BF_M", "DSL_BF_C", "DSL_ASCC_C", "DSL_ASB_C", "DRL_BF_M", "DRL_BF_C"]
-
 
 instances = pd.read_csv("experimentation/instances.csv")
-instances = instances[instances["group"] == group]
+instances = instances[instances["group"].str.contains(str(group), regex=False)]
 total = len(instances)*len(solvers)
 i = 1
 
@@ -47,6 +65,6 @@ for instance_name in instances["instance"]:
             "-e", export_folder,
             "-v", "True",
             "-m", solver,
-            "-to", "60"]
+            "-to", timeout]
         os.system(f"python instance_solver.py {' '.join(solver_arguments)}")
         print()

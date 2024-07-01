@@ -10,19 +10,25 @@ def is_group_1(row):
     spread = row["spread"]
     if topology == "EuroLarge" and slots in [10, 30] and abs(spread - 0.2) < 0.001:
         return True
-    if topology == "SpanishTelefonica" and slots in [10, 30] and abs(spread - 0.2) < 0.001:
+    if topology == "SpanishTelefonica" and slots in [10, 30] \
+        and (abs(spread - 0.2) < 0.001 or abs(spread - 0.5) < 0.001):
         return True
-    if topology == "PanEuropeanCOST239" and (abs(spread - 0.2) < 0.001 or abs(spread - 0.5) < 0.001):
+    if topology == "PanEuropeanCOST239":
         return True
     if topology in ["n6s9"]:
         return True
     return False
 
+def is_group_2(row):
+    return True
+
 def group_selector(row):
-    # Group 1
+    groups = []
     if is_group_1(row):
-        return 1
-    return 0
+        groups.append(1)
+    if is_group_2(row):
+        groups.append(2)
+    return groups
 
 # Split instance data to columns
 def name_to_values(instance):

@@ -60,8 +60,8 @@ class Export:
         with open(f"{self.path}/{m.name}_solution_details.json", "w") as f:
             json.dump(json_export, f, sort_keys=True)
 
-        if m.solution is not None:
-            m.solution.export(f"{self.path}/{m.name}_solution.json")
+        #if m.solution is not None:
+        #    m.solution.export(f"{self.path}/{m.name}_solution.json")
 
 
 class Timeout:
